@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>BeetleApp</title>
+  </head>
+  <body>
+    <h1>BeetleApp</h1>
+    {% if user.is_authenticated %}
+    <p>Hola {{user.username}}</p>
+    <a href="{% url 'logout' %}">Salir</a>
+    <p><a href="{% url 'observation_create' %}">Nueva Obvservación</a></p>
+    <p><a href="{% url 'observation_list' %}">Mis Observaciónes</a></p>
+
+    {% else %}
+    <p><a href="{% url 'login' %}">Ingresar</a></p>
+    <a href="{% url 'register' %}">Registrarme</a>
+    {% endif %}
+  </body>
+</html>

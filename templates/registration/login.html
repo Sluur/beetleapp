@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingresar</title>
+</head>
+<body>
+    <h1>Ingresar</h1>
+    <form method="post">
+        {% csrf_token %} {{form.as_p}}
+        <button type="submit">Registrarme</button>
+
+    </form>
+    <p><a href="{% url 'password_reset' %}"">Olvidé mi contrasñea</a></p>
+    <p><a href="{% url 'register' %}"">Crear cuenta</a></p>
+    
+</body>
+</html>

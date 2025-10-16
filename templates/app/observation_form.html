@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nueva observación</title>
+    <style>
+      #map {
+        height: 400px; /* ✅ altura fija */
+        width: 100%;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+      }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  </head>
+  <body>
+    <p>
+      <a href="{% url 'home' %}">Inicio</a> ·
+      <a href="{% url 'observation_list' %}">Mis observaciones</a>
+    </p>
+    <h1>Nueva observación</h1>
+
+    <div id="map"></div>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %} {{ form.non_field_errors }}
+      <p>{{ form.date.label_tag }} {{ form.date }}</p>
+      <p>{{ form.place_text.label_tag }} {{ form.place_text }}</p>
+      <p>{{ form.latitude.label_tag }} {{ form.latitude }}</p>
+      <p>{{ form.longitude.label_tag }} {{ form.longitude }}</p>
+      <p>{{ form.photo.label_tag }} {{ form.photo }}</p>
+      <button type="submit">Guardar</button>
+    </form>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+      const map = L.map("map").setView([-24.7829, -65.4232], 12);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(map);
+
+      const latInput = document.getElementById("id_latitude");
+      const lonInput = document.getElementById("id_longitude");
+      let marker = null;
+
+      function setMarker(lat, lon) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lon]).addTo(map);
+      }
+
+      map.on("click", (e) => {
+        latInput.value = e.latlng.lat.toFixed(6);
+        lonInput.value = e.latlng.lng.toFixed(6);
+        setMarker(e.latlng.lat, e.latlng.lng);
+      });
+
+      if (latInput.value && lonInput.value) {
+        setMarker(parseFloat(latInput.value), parseFloat(lonInput.value));
+        map.setView(
+          [parseFloat(latInput.value), parseFloat(lonInput.value)],
+          14
+        );
+      }
+    </script>
+  </body>
+</html>

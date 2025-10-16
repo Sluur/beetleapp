@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mis observaciones</title>
+  </head>
+  <body>
+    <p>
+      <a href="{% url 'home' %}">Inicio</a> ·
+      <a href="{% url 'observation_create' %}">Nueva</a> ·
+      <a href="{% url 'logout' %}">Salir</a>
+    </p>
+    <h1>Mis observaciones</h1>
+
+    <ul>
+      {% for o in observations %}
+      <li>
+        <strong>{{ o.date }}</strong> - ({{ o.latitude }}, {{ o.longitude }} -
+        {{ o.place_text }}) {% if o.photo %}<br /><img
+          src="{{ o.photo.url }}"
+          alt=""
+          style="max-height: 120px"
+        />{% endif %}
+      </li>
+      {% empty %}
+
+      <li>No tenés observaciones todavia.</li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>
