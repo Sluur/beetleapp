@@ -8,7 +8,10 @@
     <h1>BeetleApp</h1>
     {% if user.is_authenticated %}
     <p>Hola {{user.username}}</p>
-    <a href="{% url 'logout' %}">Salir</a>
+    <form action="{% url 'logout' %}" method="post" style="display: inline">
+      {% csrf_token %}
+      <button type="submit">Salir</button>
+    </form>
     <p><a href="{% url 'observation_create' %}">Nueva Obvservación</a></p>
     <p><a href="{% url 'observation_list' %}">Mis Observaciónes</a></p>
 

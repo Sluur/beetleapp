@@ -8,7 +8,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home, name='home'),
 
-    # Auth built-in de Django
     path('accounts/', include('django.contrib.auth.urls')),
     path('register/', views.register, name='register'),
 

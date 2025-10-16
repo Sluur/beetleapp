@@ -9,7 +9,7 @@
     <h1>Ingresar</h1>
     <form method="post">
         {% csrf_token %} {{form.as_p}}
-        <button type="submit">Registrarme</button>
+        <button type="submit">Ingresar</button>
 
     </form>
     <p><a href="{% url 'password_reset' %}"">Olvidé mi contrasñea</a></p>
