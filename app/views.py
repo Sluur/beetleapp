@@ -4,6 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login as auth_login
 from .forms import ObservationForm
 from .models import Observation
+import json
 
 # Create your views here.
 
@@ -36,5 +37,17 @@ def observation_create(request):
 
 @login_required
 def observation_list(request):
-     qs = Observation.objects.filter(user=request.user).order_by('-created_at')
-     return render(request,'app/observation_list.html', {'observations': qs})
+    observations = Observation.objects.filter(user=request.user).order_by('-date')
+
+    points = [{
+        "lat": float(o.latitude),
+        "lng": float(o.longitude),
+        "date": str(o.date),
+        "place": o.place_text,
+        "photo": o.photo.url if o.photo else "",
+    } for o in observations]
+
+    return render(request, 'app/observation_list.html', {
+        'observations': observations,
+        'points': points,
+    })

@@ -1,23 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <title>BeetleApp</title>
-  </head>
-  <body>
-    <h1>BeetleApp</h1>
-    {% if user.is_authenticated %}
-    <p>Hola {{user.username}}</p>
-    <form action="{% url 'logout' %}" method="post" style="display: inline">
-      {% csrf_token %}
-      <button type="submit">Salir</button>
-    </form>
-    <p><a href="{% url 'observation_create' %}">Nueva Obvservación</a></p>
-    <p><a href="{% url 'observation_list' %}">Mis Observaciónes</a></p>
-
-    {% else %}
-    <p><a href="{% url 'login' %}">Ingresar</a></p>
-    <a href="{% url 'register' %}">Registrarme</a>
-    {% endif %}
-  </body>
-</html>
+{% extends 'base.html' %} {% block title %}Inicio - BeetleApp{% endblock %} {% block content %}
+<h1>Bienvenido a BeetleApp</h1>
+<p>Esta es tu aplicación para registrar observaciones con ubicación y foto.</p>
+{% endblock %}

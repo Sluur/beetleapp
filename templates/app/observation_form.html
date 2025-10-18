@@ -16,7 +16,8 @@
   </head>
   <body>
     <p>
-      <a href="{% url 'home' %}">Inicio</a> ·
+      <a href="{% url 'home' %}">Inicio</a>
+      ·
       <a href="{% url 'observation_list' %}">Mis observaciones</a>
     </p>
     <h1>Nueva observación</h1>
@@ -57,10 +58,7 @@
 
       if (latInput.value && lonInput.value) {
         setMarker(parseFloat(latInput.value), parseFloat(lonInput.value));
-        map.setView(
-          [parseFloat(latInput.value), parseFloat(lonInput.value)],
-          14
-        );
+        map.setView([parseFloat(latInput.value), parseFloat(lonInput.value)], 14);
       }
     </script>
   </body>
