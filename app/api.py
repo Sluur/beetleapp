@@ -1,9 +1,13 @@
-from rest_framework import serializers, viewsets, permissions, filters
+from rest_framework import serializers, viewsets, permissions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Observation
 
+# ----------------------------
+# Serializer
+# ----------------------------
 class ObservationSerializer(serializers.ModelSerializer):
-    photo_url = serializers.SerializerMethodField();
+    photo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Observation
@@ -12,17 +16,29 @@ class ObservationSerializer(serializers.ModelSerializer):
 
     def get_photo_url(self, obj):
         req = self.context.get("request")
-        return req.build_absolute_uri(obj.photo.url) if (req and obj.photo) else None
+        try:
+            url = obj.photo.url
+        except Exception:
+            url = None
+        return req.build_absolute_uri(url) if (req and url) else url
 
+
+# ----------------------------
+# Permiso: dueño del objeto
+# ----------------------------
 class IsOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.user_id == request.user.id
+        return request.user.is_authenticated and getattr(obj, "user_id", None) == request.user.id
 
-
+# ----------------------------
+# ViewSet
+# ----------------------------
 class ObservationViewSet(viewsets.ModelViewSet):
     serializer_class = ObservationSerializer
-    permission_classes = [permissions.IsAuthenticated & IsOwner]
     parser_classes = [MultiPartParser, FormParser]
+
+    permission_classes = [IsAuthenticated]
+
     filterset_fields = {
         "date": ["exact", "gte", "lte"],
         "latitude": ["gte", "lte"],
@@ -33,7 +49,14 @@ class ObservationViewSet(viewsets.ModelViewSet):
     ordering = ["-created_at"]
 
     def get_queryset(self):
+
         return Observation.objects.filter(user=self.request.user).order_by("-created_at")
 
+    def get_permissions(self):
+        perms = super().get_permissions()
+        if self.action in ["retrieve", "update", "partial_update", "destroy"]:
+            perms.append(IsOwner())
+        return perms
+
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)    
+        serializer.save(user=self.request.user)
