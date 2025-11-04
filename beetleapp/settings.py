@@ -156,3 +156,5 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # --- Default PK ---
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AI_PREDICT_URL = "http://localhost:5001/predict"
