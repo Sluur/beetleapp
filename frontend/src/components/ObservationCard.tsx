@@ -1,3 +1,8 @@
+type InferenceMini = {
+  predicted_label: string;
+  confidence: number;
+} | null;
+
 export default function ObservationCard({
   id,
   date,
@@ -5,6 +10,7 @@ export default function ObservationCard({
   latitude,
   longitude,
   photo_url,
+  inference,
   active,
   onHover,
   onClick,
@@ -14,11 +20,15 @@ export default function ObservationCard({
   place_text?: string;
   latitude: number;
   longitude: number;
-  photo_url?: string;
+  photo_url?: string | null;
+  inference?: InferenceMini;
   active?: boolean;
   onHover?: (id: number | null) => void;
   onClick?: (id: number) => void;
 }) {
+  const latText = Number.isFinite(latitude) ? latitude.toFixed(6) : String(latitude);
+  const lonText = Number.isFinite(longitude) ? longitude.toFixed(6) : String(longitude);
+
   return (
     <div
       onMouseEnter={() => onHover?.(id)}
@@ -30,13 +40,37 @@ export default function ObservationCard({
         active ? "border-blue-500 ring-2 ring-blue-200" : "border-neutral-200",
       ].join(" ")}
     >
-      {photo_url && <img src={photo_url} alt="" className="w-full h-40 object-cover transition group-hover:brightness-95" />}
+      {photo_url ? (
+        <img
+          src={photo_url}
+          alt={place_text || "observación"}
+          className="w-full h-40 object-cover transition group-hover:brightness-95"
+          onError={(e) => {
+            // fallback si la URL de la imagen falla
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+        />
+      ) : (
+        <div className="w-full h-40 bg-neutral-100 flex items-center justify-center text-neutral-400 text-sm">Sin imagen</div>
+      )}
+
       <div className="p-3">
         <div className="text-[11px] text-neutral-500">{new Date(date).toLocaleDateString()}</div>
         <div className="font-semibold text-neutral-900 truncate">{place_text || "Sin lugar"}</div>
         <div className="text-xs text-neutral-500">
-          ({latitude.toFixed(6)}, {longitude.toFixed(6)})
+          ({latText}, {lonText})
         </div>
+
+        {inference && (
+          <div className="mt-2 text-xs bg-blue-50 border border-blue-100 rounded-lg p-2">
+            <p>
+              <span className="font-medium text-blue-700">Predicción:</span> {inference.predicted_label}
+            </p>
+            <p>
+              <span className="font-medium text-blue-700">Confianza:</span> {inference.confidence.toFixed(1)}%
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

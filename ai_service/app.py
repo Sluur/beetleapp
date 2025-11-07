@@ -10,7 +10,7 @@ import json, os
 APP_VERSION = os.getenv("MODEL_VERSION", "resnet18_v1_2025-10-31")
 MODEL_PATH = os.getenv("MODEL_PATH", "models/weights.pth")
 MAPPING_FILE = os.getenv("MAPPING_FILE", "models/class_mapping.json")
-IMAGE_SIZE = int(os.getenv("IMAGE_SIZE", "224"))  # ⚠️ cambia si tu modelo usa otro tamaño
+IMAGE_SIZE = int(os.getenv("IMAGE_SIZE", "224"))  
 
 app = Flask(__name__)
 CORS(app)

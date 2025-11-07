@@ -1,8 +1,10 @@
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MapPane from "../components/MapPane";
 import ObservationForm from "../components/ObservationForm";
 import { api } from "../lib/api";
+
+type Preview = { label: string; confidence: number; version?: string };
 
 export default function NewObservation() {
   const [date, setDate] = useState("");
@@ -10,18 +12,46 @@ export default function NewObservation() {
   const [lat, setLat] = useState<number | null>(null);
   const [lon, setLon] = useState<number | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
+
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [pvLoading, setPvLoading] = useState(false);
+
+  useEffect(() => {
+    const run = async () => {
+      setPreview(null);
+      if (!photo) return;
+      try {
+        setPvLoading(true);
+        const fd = new FormData();
+        fd.append("image", photo);
+        const { data } = await api.post("/predict_preview/", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setPreview({
+          label: data.label,
+          confidence: data.confidence,
+          version: data.version,
+        });
+      } catch {
+        setPreview(null);
+      } finally {
+        setPvLoading(false);
+      }
+    };
+    run();
+  }, [photo]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError("");
 
-    if (lat == null || lon == null) {
-      setError("Seleccioná un punto en el mapa (o completá lat/lon).");
-      return;
-    }
+    if (lat == null || lon == null || !preview) return;
 
     try {
+      setSaving(true);
       const fd = new FormData();
       fd.append("date", date);
       fd.append("place_text", place);
@@ -29,17 +59,26 @@ export default function NewObservation() {
       fd.append("longitude", String(lon));
       if (photo) fd.append("photo", photo);
 
-      await api.post("/observations/", fd);
+      fd.append("predicted_label", preview.label);
+      fd.append("predicted_confidence", String(preview.confidence));
+      if (preview.version) fd.append("predicted_version", preview.version);
+
+      await api.post("/observations/", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
       window.location.href = "/observations";
     } catch (err: any) {
       const detail = err?.response?.data && (typeof err.response.data === "string" ? err.response.data : JSON.stringify(err.response.data));
       setError(detail || "No se pudo guardar la observación.");
+    } finally {
+      setSaving(false);
     }
   }
 
   return (
     <div className="h-full">
-      <div className="h-full grid grid-cols-1 md:grid-cols-2">
+      <div className="h-full grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="h-full p-4 bg-white">
           <div className="h-full rounded-2xl overflow-hidden border border-neutral-200 shadow-sm">
             <MapPane
@@ -69,6 +108,10 @@ export default function NewObservation() {
               onChangeLon={setLon}
               onChangePhoto={setPhoto}
               onSubmit={submit}
+              preview={preview}
+              pvLoading={pvLoading}
+              saving={saving}
+              variant="default"
             />
           </div>
         </div>
