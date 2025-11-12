@@ -1,4 +1,3 @@
-// src/components/ObservationDetailDrawer.tsx
 import { useEffect, useState } from "react";
 import { getObservation, updateObservation, deleteObservation } from "../lib/observations";
 import { X } from "lucide-react";
@@ -22,7 +21,7 @@ export default function ObservationDetailDrawer({
   onUpdated,
   onDeleted,
 }: {
-  id: number | null;
+  id: number | null; // acepta null para evitar TS2322
   open: boolean;
   onClose: () => void;
   onUpdated?: (o: Observation) => void;
@@ -43,37 +42,46 @@ export default function ObservationDetailDrawer({
 
   useEffect(() => {
     if (!open || !id) return;
-    const run = async () => {
+    (async () => {
       try {
         setLoading(true);
         const data = await getObservation(id);
         setItem(data);
         setDate(data.date ?? "");
         setPlace(data.place_text ?? "");
-        setLat(String(typeof data.latitude === "string" ? data.latitude : data.latitude?.toFixed(6)));
-        setLon(String(typeof data.longitude === "string" ? data.longitude : data.longitude?.toFixed(6)));
+        setLat(String(typeof data.latitude === "string" ? data.latitude : Number(data.latitude).toFixed(6)));
+        setLon(String(typeof data.longitude === "string" ? data.longitude : Number(data.longitude).toFixed(6)));
         setError("");
       } catch {
         setError("No se pudo cargar el detalle.");
       } finally {
         setLoading(false);
       }
-    };
-    run();
+    })();
   }, [open, id]);
+
+  function parseMaybeNumber(v: string): number | undefined {
+    if (!v || !v.trim()) return undefined;
+    const n = Number.parseFloat(v);
+    return Number.isFinite(n) ? n : undefined;
+  }
 
   async function handleSave() {
     if (!item) return;
     try {
       setSaving(true);
-      const fd = new FormData();
-      if (date) fd.append("date", date);
-      fd.append("place_text", place || "");
-      if (lat) fd.append("latitude", String(parseFloat(lat)));
-      if (lon) fd.append("longitude", String(parseFloat(lon)));
-      if (photo) fd.append("photo", photo);
 
-      const updated = await updateObservation(item.id, fd);
+      // Mandamos un objeto (UpdateObsInput). La lib arma FormData si viene photo.
+      const payload: Record<string, any> = {};
+      if (date) payload.date = date;
+      payload.place_text = place || "";
+      const nlat = parseMaybeNumber(lat);
+      const nlon = parseMaybeNumber(lon);
+      if (nlat !== undefined) payload.latitude = nlat;
+      if (nlon !== undefined) payload.longitude = nlon;
+      if (photo) payload.photo = photo;
+
+      const updated = await updateObservation(item.id, payload);
       setItem(updated);
       setEdit(false);
       onUpdated?.(updated);
@@ -99,6 +107,8 @@ export default function ObservationDetailDrawer({
   }
 
   if (!open) return null;
+
+  const confPct = item?.inference ? (item.inference.confidence <= 1 ? item.inference.confidence * 100 : item.inference.confidence) : null;
 
   return (
     <div className="fixed inset-0 z-50">
@@ -126,7 +136,7 @@ export default function ObservationDetailDrawer({
               {!edit ? (
                 <>
                   {item.photo_url ? (
-                    <img src={item.photo_url} alt="" className="w-full rounded-xl mb-4 object-cover max-h-64" />
+                    <img src={item.photo_url} alt="" className="w-full rounded-xl mb-4 object-cover max-h-64" loading="lazy" />
                   ) : (
                     <div className="w-full h-40 rounded-xl bg-neutral-100 mb-4 grid place-items-center text-neutral-400">Sin foto</div>
                   )}
@@ -156,7 +166,7 @@ export default function ObservationDetailDrawer({
                         <b>Predicción:</b> {item.inference.predicted_label}
                       </div>
                       <div className="p-2">
-                        <b>Confianza:</b> {item.inference.confidence.toFixed(1)}%
+                        <b>Confianza:</b> {confPct!.toFixed(1)}%
                       </div>
                     </div>
                   )}
@@ -165,7 +175,7 @@ export default function ObservationDetailDrawer({
                 <>
                   <label className="block mb-3">
                     <span className="text-sm text-neutral-700">Foto (opcional)</span>
-                    <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
+                    <input type="file" accept="image/*,.tif,.tiff" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
                   </label>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -203,19 +213,20 @@ export default function ObservationDetailDrawer({
               ) : (
                 <>
                   <button
+                    type="button"
                     disabled={saving}
                     className="px-4 py-2 rounded-xl text-white bg-blue-500 transition hover:bg-blue-600"
                     onClick={handleSave}
                   >
                     {saving ? "Guardando…" : "Guardar"}
                   </button>
-                  <button className="px-4 py-2 rounded-xl border ml-2" onClick={() => setEdit(false)}>
+                  <button type="button" className="px-4 py-2 rounded-xl border ml-2" onClick={() => setEdit(false)}>
                     Cancelar
                   </button>
                 </>
               )}
             </div>
-            <button className="px-4 py-2 rounded-xl border border-red-300 text-red-600" onClick={handleDelete}>
+            <button type="button" className="px-4 py-2 rounded-xl border border-red-300 text-red-600" onClick={handleDelete}>
               Eliminar
             </button>
           </div>

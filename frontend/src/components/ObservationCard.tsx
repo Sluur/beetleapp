@@ -28,6 +28,7 @@ export default function ObservationCard({
 }) {
   const latText = Number.isFinite(latitude) ? latitude.toFixed(6) : String(latitude);
   const lonText = Number.isFinite(longitude) ? longitude.toFixed(6) : String(longitude);
+  const confPct = inference ? (inference.confidence <= 1 ? inference.confidence * 100 : inference.confidence) : null;
 
   return (
     <div
@@ -45,8 +46,8 @@ export default function ObservationCard({
           src={photo_url}
           alt={place_text || "observación"}
           className="w-full h-40 object-cover transition group-hover:brightness-95"
+          loading="lazy"
           onError={(e) => {
-            // fallback si la URL de la imagen falla
             (e.currentTarget as HTMLImageElement).style.display = "none";
           }}
         />
@@ -67,7 +68,7 @@ export default function ObservationCard({
               <span className="font-medium text-blue-700">Predicción:</span> {inference.predicted_label}
             </p>
             <p>
-              <span className="font-medium text-blue-700">Confianza:</span> {inference.confidence.toFixed(1)}%
+              <span className="font-medium text-blue-700">Confianza:</span> {confPct!.toFixed(1)}%
             </p>
           </div>
         )}

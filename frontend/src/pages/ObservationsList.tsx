@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useLayoutEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useLayoutEffect, useState, useCallback } from "react";
 import { api } from "../lib/api";
 import MapAllObservations, { type ObsPoint } from "../components/MapAllObservations";
 import ObservationCard from "../components/ObservationCard";
@@ -34,6 +34,11 @@ export default function ObservationsPage() {
   // medir altura real de la toolbar para el offset de los headers sticky
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const [toolbarH, setToolbarH] = useState(0);
+
+  const handleSelectOnMap = useCallback((id: number) => {
+    setActiveId(id);
+  }, []);
+
   useLayoutEffect(() => {
     const el = toolbarRef.current;
     if (!el) return;
@@ -91,14 +96,17 @@ export default function ObservationsPage() {
   const points: ObsPoint[] = useMemo(
     () =>
       items
-        .map((o) => ({
-          id: o.id,
-          date: o.date,
-          place_text: o.place_text,
-          latitude: typeof o.latitude === "string" ? parseFloat(o.latitude) : o.latitude,
-          longitude: typeof o.longitude === "string" ? parseFloat(o.longitude) : o.longitude,
-          photo_url: (o as any).photo_url || (o as any).photo || undefined,
-        }))
+        .map(
+          (o) =>
+            ({
+              id: o.id,
+              date: o.date,
+              place_text: o.place_text,
+              latitude: typeof o.latitude === "string" ? parseFloat(o.latitude) : o.latitude,
+              longitude: typeof o.longitude === "string" ? parseFloat(o.longitude) : o.longitude,
+              photo_url: (o as any).photo_url || (o as any).photo || undefined,
+            } as ObsPoint)
+        )
         .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude)),
     [items]
   );
@@ -125,7 +133,7 @@ export default function ObservationsPage() {
         {/* MAPA IZQUIERDA */}
         <div className="h-full p-4 min-h-0">
           <div className="h-full rounded-2xl overflow-hidden border border-neutral-200 shadow-sm bg-white">
-            <MapAllObservations points={points} activeId={activeId ?? undefined} onSelect={(id) => setActiveId(id)} />
+            <MapAllObservations points={points} activeId={activeId ?? undefined} onSelect={handleSelectOnMap} />
           </div>
         </div>
 
@@ -170,6 +178,7 @@ export default function ObservationsPage() {
                 <option value="-created_at">Más recientes</option>
                 <option value="created_at">Más antiguas</option>
                 <option value="predicted_label">Tipo (A→Z)</option>
+                <option value="-predicted_label">Tipo (Z→A)</option>
                 <option value="-date">Fecha ↓</option>
                 <option value="date">Fecha ↑</option>
               </select>
@@ -205,7 +214,7 @@ export default function ObservationsPage() {
                       <hr className="border-neutral-200" />
                     </div>
 
-                    {/* header de grupo (sticky con offset real de toolbar) */}
+                    {/* header de grupo */}
                     <div
                       className=" z-10 bg-white/90 backdrop-blur supports-backdrop-filter:bg-white/70
                                  px-2 py-2 -mx-2 border-b border-neutral-200"

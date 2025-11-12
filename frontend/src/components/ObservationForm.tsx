@@ -60,7 +60,7 @@ export default function ObservationForm({
     if (!f.type.startsWith("image/")) {
       setPickedName("");
       onChangePhoto(null);
-      return; // opcional: podrías mostrar un toast/estado de error local
+      return;
     }
     setPickedName(f.name);
     onChangePhoto(f);
@@ -88,6 +88,9 @@ export default function ObservationForm({
     const f = e.dataTransfer.files?.[0] ?? null;
     pickFile(f);
   }
+
+  // normalizamos % por si la API devuelve 0..1
+  const previewPct = preview ? (preview.confidence <= 1 ? preview.confidence * 100 : preview.confidence) : null;
 
   return (
     <form onSubmit={onSubmit} className={wrapperCls}>
@@ -170,7 +173,7 @@ export default function ObservationForm({
               </svg>
               <div className="text-sm">
                 <b>Arrastrá y soltá</b> la imagen aquí, o <span className="underline">hacé click para elegir</span>.
-                <div className="text-xs text-neutral-500 mt-1">Formatos aceptados: TIF/TIFF</div>
+                <div className="text-xs text-neutral-500 mt-1">Formatos aceptados: TIF/TIFF/JPEG/PNG</div>
               </div>
             </div>
 
@@ -182,7 +185,6 @@ export default function ObservationForm({
           </div>
         </div>
       </div>
-
 
       <div className="mt-2 rounded-2xl border border-neutral-200 shadow-sm p-4 bg-linear-to-br from-white to-neutral-50">
         <div className="flex items-center justify-between">
@@ -204,7 +206,7 @@ export default function ObservationForm({
             </div>
             <div className="rounded-xl border border-neutral-200 p-3">
               <div className="text-xs text-neutral-500">Confianza</div>
-              <div className="text-base font-medium">{preview.confidence.toFixed(1)}%</div>
+              <div className="text-base font-medium">{previewPct!.toFixed(1)}%</div>
             </div>
             <div className="rounded-xl border border-neutral-200 p-3">
               <div className="text-xs text-neutral-500">Modelo</div>
@@ -219,6 +221,7 @@ export default function ObservationForm({
         <div className="flex items-center justify-end gap-3">
           {!canSave && <span className="text-sm text-neutral-500">Completá fecha, lat/lon, foto y esperá la predicción.</span>}
           <button
+            type="submit"
             className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium
                        hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300
                        disabled:opacity-50 disabled:hover:bg-blue-600"

@@ -35,10 +35,16 @@ export default function MapAllObservations({ points, activeId, onSelect }: Props
   const divRef = useRef<HTMLDivElement | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
   const markerIndex = useRef<Record<number, L.Marker>>({});
+  const onSelectRef = useRef<Props["onSelect"]>(onSelect);
 
   useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
+
+  // montar mapa
+  useEffect(() => {
     if (!divRef.current || mapRef.current) return;
-    const map = L.map(divRef.current, { zoomControl: true });
+    const map = L.map(divRef.current, { zoomControl: true, preferCanvas: true });
     mapRef.current = map;
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -62,6 +68,7 @@ export default function MapAllObservations({ points, activeId, onSelect }: Props
     };
   }, []);
 
+  // dibujar marcadores cuando cambian los puntos
   useEffect(() => {
     const map = mapRef.current;
     const layer = layerRef.current;
@@ -85,42 +92,55 @@ export default function MapAllObservations({ points, activeId, onSelect }: Props
           <div style="font-size:12px;color:#555">${new Date(p.date).toLocaleDateString()}</div>
           ${
             p.photo_url
-              ? `<img src="${p.photo_url}" style="margin-top:6px;width:100%;height:100px;object-fit:cover;border-radius:8px" />`
+              ? `<img src="${p.photo_url}" loading="lazy"
+                   style="margin-top:6px;width:100%;height:100px;object-fit:cover;border-radius:8px" />`
               : ""
           }
         </div>`;
-      m.bindPopup(html, { className: "rounded-xl" });
-
-      m.on("click", () => {
-        onSelect?.(p.id);
-      });
+      m.bindPopup(html);
+      m.on("click", () => onSelectRef.current?.(p.id));
     });
 
     if (points.length === 1) {
-      map.setView(bounds.getCenter(), 14);
+      map.setView(bounds.getCenter(), Math.min(14, map.getMaxZoom()));
     } else if (points.length > 1) {
-      map.fitBounds(bounds.pad(0.15));
+      map.fitBounds(bounds.pad(0.15), { maxZoom: 15 });
     } else {
-      map.setView([-24.7829, -65.4232], 12); // default Salta
+      map.setView([-24.7829, -65.4232], 12); // Salta
     }
-  }, [points, onSelect]);
 
+    // reabrir el popup si ya hay uno activo
+    if (activeId && markerIndex.current[activeId]) {
+      const m = markerIndex.current[activeId];
+      m.openPopup();
+      m.setZIndexOffset(1000);
+    }
+  }, [points, activeId]); // sin onSelect
+
+  // resaltar/centrar activo
   useEffect(() => {
-    const m = activeId ? markerIndex.current[activeId] : null;
     const map = mapRef.current;
     if (!map) return;
 
-    Object.values(markerIndex.current).forEach((mk) => mk.setOpacity(1));
+    const all = Object.values(markerIndex.current);
+    if (all.length === 0) return;
+
+    // reset
+    all.forEach((mk) => {
+      mk.setOpacity(1);
+      mk.setZIndexOffset(0);
+    });
+
+    if (!activeId) return;
+
+    const m = markerIndex.current[activeId];
     if (m) {
+      all.forEach((mk) => mk.setOpacity(0.5));
       m.setOpacity(1);
+      m.setZIndexOffset(1000);
       m.openPopup();
       map.panTo(m.getLatLng());
-
       if (map.getZoom() < 13) map.setZoom(13);
-      // atenuar otros
-      Object.entries(markerIndex.current).forEach(([id, mk]) => {
-        if (Number(id) !== activeId) mk.setOpacity(0.5);
-      });
     }
   }, [activeId]);
 

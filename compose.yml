@@ -1,0 +1,14 @@
+services:
+  mail:
+    image: changemakerstudiosus/papercut-smtp:latest
+    container_name: beetleapp_mail
+    restart: unless-stopped
+    environment:
+      SmtpServer__Port: 2525
+      Urls: http://0.0.0.0:8080
+    ports:
+      - "8080:8080" # UI web
+      - "2525:2525" # SMTP
+
+volumes:
+  mysql_data:

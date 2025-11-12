@@ -1,8 +1,8 @@
 import type { FormEvent } from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react"; // 👈 agregado useCallback
 import MapPane from "../components/MapPane";
 import ObservationForm from "../components/ObservationForm";
-import { api } from "../lib/api";
+import { predictPreview, createObservation } from "../lib/observations";
 
 type Preview = { label: string; confidence: number; version?: string };
 
@@ -20,53 +20,54 @@ export default function NewObservation() {
   const [pvLoading, setPvLoading] = useState(false);
 
   useEffect(() => {
-    const run = async () => {
+    let canceled = false;
+    (async () => {
       setPreview(null);
       if (!photo) return;
       try {
         setPvLoading(true);
-        const fd = new FormData();
-        fd.append("image", photo);
-        const { data } = await api.post("/predict_preview/", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        setPreview({
-          label: data.label,
-          confidence: data.confidence,
-          version: data.version,
-        });
+        const data = await predictPreview(photo);
+        if (!canceled) setPreview(data);
       } catch {
-        setPreview(null);
+        if (!canceled) setPreview(null);
       } finally {
-        setPvLoading(false);
+        if (!canceled) setPvLoading(false);
       }
+    })();
+    return () => {
+      canceled = true;
     };
-    run();
   }, [photo]);
+
+  const handleMapChange = useCallback((a: number, b: number) => {
+    setLat(a);
+    setLon(b);
+  }, []); // 👈 función estable (no cambia en cada render)
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError("");
 
-    if (lat == null || lon == null || !preview) return;
+    if (!date || lat == null || lon == null) {
+      setError("Completá fecha y coordenadas.");
+      return;
+    }
 
     try {
       setSaving(true);
-      const fd = new FormData();
-      fd.append("date", date);
-      fd.append("place_text", place);
-      fd.append("latitude", String(lat));
-      fd.append("longitude", String(lon));
-      if (photo) fd.append("photo", photo);
 
-      fd.append("predicted_label", preview.label);
-      fd.append("predicted_confidence", String(preview.confidence));
-      if (preview.version) fd.append("predicted_version", preview.version);
+      const payload = {
+        date,
+        place_text: place || undefined,
+        latitude: lat,
+        longitude: lon,
+        photo: photo ?? undefined,
+        predicted_label: preview?.label,
+        predicted_confidence: preview?.confidence,
+        predicted_version: preview?.version,
+      };
 
-      await api.post("/observations/", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
+      await createObservation(payload);
       window.location.href = "/observations";
     } catch (err: any) {
       const detail = err?.response?.data && (typeof err.response.data === "string" ? err.response.data : JSON.stringify(err.response.data));
@@ -81,14 +82,7 @@ export default function NewObservation() {
       <div className="h-full grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="h-full p-4 bg-white">
           <div className="h-full rounded-2xl overflow-hidden border border-neutral-200 shadow-sm">
-            <MapPane
-              lat={lat}
-              lon={lon}
-              onChange={(a, b) => {
-                setLat(a);
-                setLon(b);
-              }}
-            />
+            <MapPane lat={lat} lon={lon} onChange={handleMapChange} /> {/* 👈 cambiá esto */}
           </div>
         </div>
 

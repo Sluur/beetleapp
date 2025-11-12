@@ -1,11 +1,10 @@
-// src/lib/apiClient.ts
 import { api } from "./api";
 
 /** ===== Tipos ===== */
 export type Inference = {
   id: number;
   predicted_label: string;
-  confidence: number; // 0..100
+  confidence: number; // tu backend guarda float; si es 0..1 o 0..100 lo decidís en UI
   is_correct: boolean | null;
   created_at?: string;
 };
@@ -13,11 +12,11 @@ export type Inference = {
 export type Observation = {
   id: number;
   date: string; // "YYYY-MM-DD"
-  latitude: number | string; // si viene como string del backend decimal
+  latitude: number | string; // puede venir como string por DecimalField
   longitude: number | string;
   place_text?: string;
-  photo?: string; // path relativo
-  photo_url?: string; // URL absoluta
+  photo?: string | null; // path relativo (si lo exponés)
+  photo_url?: string | null; // URL absoluta (serializer)
   created_at: string;
   inference?: Inference | null;
 };
@@ -28,10 +27,7 @@ export type PredictPreview = {
   version?: string;
 };
 
-/** ===== Helpers ===== */
-
 function cleanServerError(err: any): never {
-  // devuelve un mensaje más claro
   const msg =
     err?.response?.data?.detail ??
     (typeof err?.response?.data === "string" && !/^<!DOCTYPE/i.test(err.response.data)
@@ -42,7 +38,7 @@ function cleanServerError(err: any): never {
 
 /** ===== API ===== */
 
-// Para la tarjeta de predicción (frontend → Django → Flask)
+// POST /api/predict_preview/
 export async function predictPreview(file: File): Promise<PredictPreview> {
   try {
     const fd = new FormData();
@@ -56,16 +52,18 @@ export async function predictPreview(file: File): Promise<PredictPreview> {
   }
 }
 
-export async function listObservations(params?: { search?: string; ordering?: string }): Promise<Observation[]> {
+// GET /api/observations/?search&ordering&page
+export async function listObservations(params?: { search?: string; ordering?: string; page?: number }) {
   try {
     const { data } = await api.get("/observations/", { params });
-    // DRF list devuelve {results:[]} si usas pagination; si no, es un array
+    // si DRF pagination está activa, viene {count,next,previous,results}
     return Array.isArray(data) ? (data as Observation[]) : (data.results as Observation[]);
   } catch (err) {
     cleanServerError(err);
   }
 }
 
+// POST /api/observations/
 export async function createObservation(formData: FormData): Promise<Observation> {
   try {
     const { data } = await api.post("/observations/", formData, {
@@ -77,6 +75,7 @@ export async function createObservation(formData: FormData): Promise<Observation
   }
 }
 
+// POST /api/observations/:id/classify/
 export async function classifyObservation(observationId: number): Promise<Inference> {
   try {
     const { data } = await api.post(`/observations/${observationId}/classify/`);
@@ -86,13 +85,30 @@ export async function classifyObservation(observationId: number): Promise<Infere
   }
 }
 
+// POST /api/inferences/:id/validate/
 export async function validateInference(inferenceId: number, isCorrect: boolean) {
   try {
-    const { data } = await api.post(`/inferences/${inferenceId}/validate/`, {
-      is_correct: isCorrect,
-    });
+    const { data } = await api.post(`/inferences/${inferenceId}/validate/`, { is_correct: isCorrect });
     return data as { ok: true };
   } catch (err) {
     cleanServerError(err);
   }
+}
+
+// Opcionales útiles (si los usás en otras pantallas)
+export async function getObservation(id: number) {
+  const { data } = await api.get(`/observations/${id}/`);
+  return data as Observation;
+}
+
+export async function updateObservation(id: number, form: FormData | Record<string, any>) {
+  const isFD = typeof FormData !== "undefined" && form instanceof FormData;
+  const { data } = await api.patch(`/observations/${id}/`, form, {
+    headers: isFD ? { "Content-Type": "multipart/form-data" } : undefined,
+  });
+  return data as Observation;
+}
+
+export async function deleteObservation(id: number) {
+  await api.delete(`/observations/${id}/`);
 }

@@ -14,18 +14,33 @@ const DEFAULT_ICON = L.icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 });
+
 type Props = {
   lat: number | null;
   lon: number | null;
   onChange: (lat: number, lon: number) => void;
 };
 
-const defaultCenter: [number, number] = [-24.7829, -65.4232];
+const defaultCenter: [number, number] = [-24.7829, -65.4232]; // Salta
 
 export default function MapPane({ lat, lon, onChange }: Props) {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapDivRef = useRef<HTMLDivElement | null>(null);
+
+  const latRef = useRef<number | null>(lat);
+  const lonRef = useRef<number | null>(lon);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    latRef.current = lat;
+  }, [lat]);
+  useEffect(() => {
+    lonRef.current = lon;
+  }, [lon]);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     if (!mapDivRef.current || mapRef.current) return;
@@ -40,39 +55,44 @@ export default function MapPane({ lat, lon, onChange }: Props) {
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    const setHandlers = () => {
+    const attachDragHandler = () => {
       markerRef.current?.on("dragend", () => {
         const p = markerRef.current!.getLatLng();
-        onChange(+p.lat.toFixed(6), +p.lng.toFixed(6));
+        const lt = +p.lat.toFixed(6);
+        const ln = +p.lng.toFixed(6);
+        markerRef.current!.setLatLng([lt, ln]);
+        onChangeRef.current(lt, ln);
       });
     };
 
-    if (lat != null && lon != null) {
-      markerRef.current = L.marker([lat, lon], { draggable: true }).addTo(map);
-      setHandlers();
-      map.setView([lat, lon], 13);
+    if (latRef.current != null && lonRef.current != null) {
+      markerRef.current = L.marker([latRef.current, lonRef.current], {
+        draggable: true,
+        icon: DEFAULT_ICON,
+      }).addTo(map);
+      attachDragHandler();
+      map.setView([latRef.current, lonRef.current], 13);
     }
 
     map.on("click", (e: L.LeafletMouseEvent) => {
       const lt = +e.latlng.lat.toFixed(6);
       const ln = +e.latlng.lng.toFixed(6);
-      onChange(lt, ln);
-
+      onChangeRef.current(lt, ln);
       if (markerRef.current) {
-        markerRef.current.setLatLng(e.latlng);
+        markerRef.current.setLatLng([lt, ln]);
       } else {
-        markerRef.current = L.marker(e.latlng, { draggable: true }).addTo(map);
-        setHandlers();
+        markerRef.current = L.marker([lt, ln], { draggable: true, icon: DEFAULT_ICON }).addTo(map);
+        attachDragHandler();
       }
     });
 
     map.locate({ setView: false, enableHighAccuracy: true }).on("locationfound", (e) => {
-      if (lat == null && lon == null) {
+      if (latRef.current == null && lonRef.current == null) {
         const lt = +e.latlng.lat.toFixed(6);
         const ln = +e.latlng.lng.toFixed(6);
-        onChange(lt, ln);
-        markerRef.current = L.marker([lt, ln], { draggable: true }).addTo(map);
-        setHandlers();
+        onChangeRef.current(lt, ln);
+        markerRef.current = L.marker([lt, ln], { draggable: true, icon: DEFAULT_ICON }).addTo(map);
+        attachDragHandler();
         map.setView([lt, ln], 13);
       }
     });
@@ -96,13 +116,16 @@ export default function MapPane({ lat, lon, onChange }: Props) {
     if (markerRef.current) {
       markerRef.current.setLatLng(p);
     } else {
-      markerRef.current = L.marker(p, { draggable: true }).addTo(mapRef.current);
+      markerRef.current = L.marker(p, { draggable: true, icon: DEFAULT_ICON }).addTo(mapRef.current);
       markerRef.current.on("dragend", () => {
         const g = markerRef.current!.getLatLng();
-        onChange(+g.lat.toFixed(6), +g.lng.toFixed(6));
+        const lt = +g.lat.toFixed(6);
+        const ln = +g.lng.toFixed(6);
+        markerRef.current!.setLatLng([lt, ln]);
+        onChangeRef.current(lt, ln);
       });
     }
-  }, [lat, lon, onChange]);
+  }, [lat, lon]);
 
   return (
     <div className="relative h-full w-full">

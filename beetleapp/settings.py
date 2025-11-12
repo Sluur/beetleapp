@@ -1,59 +1,63 @@
 """
 Django settings for beetleapp project.
-Django 5.2.x
+Adaptado para entorno local con Docker (MySQL + Papercut) y Honcho.
 """
 
 from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
-# Carga variables del .env (debe estar junto a manage.py)
-load_dotenv()
 
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# --- Cargar variables desde .env ---
+load_dotenv(BASE_DIR / ".env")
+
 # --- Seguridad / Debug ---
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-not-for-prod")
-DEBUG = os.getenv("DEBUG", "True") == "True"
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
 
 # --- Apps ---
 INSTALLED_APPS = [
-    # Django core
+    # Core
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
-    # Terceros / API
+    # Terceros
     "rest_framework",
     "django_filters",
     "drf_spectacular",
     "corsheaders",
-
-    # Tu app
+    # App local
     "app",
 ]
 
-# --- Middleware (CORS debe ir arriba de CommonMiddleware) ---
+# --- Middleware ---
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-
-    "corsheaders.middleware.CorsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # debe ir antes de CommonMiddleware
     "django.middleware.common.CommonMiddleware",
-
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# --- CORS (para frontend en Vite) ---
-CORS_ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+# --- CORS / CSRF ---
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
 # --- URLs / WSGI ---
 ROOT_URLCONF = "beetleapp.urls"
@@ -74,27 +78,15 @@ TEMPLATES = [
         },
     },
 ]
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    # opcionales útiles:
-    "ROTATE_REFRESH_TOKENS": True,   # te da refresh nuevo al refrescar
-    "BLACKLIST_AFTER_ROTATION": True,
-    # "ALGORITHM": "HS256",
-    # "SIGNING_KEY": SECRET_KEY,
-}
 
-# --- Base de datos (MySQL) ---
-# Asegúrate de tener en beetleapp/__init__.py:
-#   import pymysql
-#   pymysql.install_as_MySQLdb()
+# --- Base de datos (MySQL Docker + PyMySQL) ---
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": os.getenv("DB_NAME", "beetleapp"),
         "USER": os.getenv("DB_USER", "beetle"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "supersegura"),
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+        "PASSWORD": os.getenv("DB_PASS", "supersegura"),
+        "HOST": os.getenv("DB_HOST", "127.0.0.1"),  # Django corre en el host, no dentro de Docker
         "PORT": os.getenv("DB_PORT", "3306"),
         "OPTIONS": {
             "charset": "utf8mb4",
@@ -103,15 +95,30 @@ DATABASES = {
     }
 }
 
+# --- Email (Papercut SMTP en Docker) ---
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "2525"))
+EMAIL_HOST_USER = ""
+EMAIL_HOST_PASSWORD = ""
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@beetleapp.local")
+
+# --- JWT ---
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(os.getenv("JWT_ACCESS_MINUTES", "30"))),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(os.getenv("JWT_REFRESH_DAYS", "7"))),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
 # --- DRF ---
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",  # si usas JWT
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",  # cambia a IsAuthenticatedOrReadOnly si querés lectura pública
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
     "DEFAULT_FILTER_BACKENDS": [
@@ -120,41 +127,41 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.UserRateThrottle",
-        "rest_framework.throttling.AnonRateThrottle",
-    ],
-    "DEFAULT_THROTTLE_RATES": {"user": "1000/day", "anon": "100/day"},
 }
 
-# --- OpenAPI (opcional, para /schema/) ---
+# --- OpenAPI ---
 SPECTACULAR_SETTINGS = {
     "TITLE": "BeetleApp API",
     "DESCRIPTION": "API de BeetleApp (Django REST Framework)",
     "VERSION": "1.0.0",
 }
 
-# --- Auth / Login redirects (si usas vistas con login) ---
+# --- Auth redirects (si usás vistas con login/logout) ---
 LOGIN_URL = "/accounts/login"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
-
-
-# --- i18n / tz ---
+# --- Idioma y zona horaria ---
 LANGUAGE_CODE = "es-ar"
 TIME_ZONE = "America/Argentina/Salta"
 USE_I18N = True
 USE_TZ = True
 
-# --- Static / Media ---
+# --- Static y Media ---
 STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]  # carpeta opcional para assets del proyecto
-
+STATICFILES_DIRS = [p for p in [BASE_DIR / "static"] if p.exists()]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-
-# --- Default PK ---
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-AI_PREDICT_URL = "http://localhost:5001/predict"
+# --- Config IA (Flask local) ---
+AI_PREDICT_URL = "http://127.0.0.1:5001/predict"
+
+
+
+# --- Seguridad básica si DEBUG=False ---
+if not DEBUG:
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

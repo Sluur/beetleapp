@@ -1,70 +1,75 @@
-// src/lib/api.ts
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 declare module "axios" {
-  // para usar config._retry sin errores de TS
   export interface InternalAxiosRequestConfig {
     _retry?: boolean;
   }
 }
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000/api";
+// Usamos VITE_API_BASE, y acá le agregamos "/api"
+const RAW_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://127.0.0.1:8000";
+const API_BASE = RAW_BASE.replace(/\/+$/, "") + "/api";
 
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE,
   timeout: 30000,
-  // si alguna vez vuelves a sesión por cookies:
-  // withCredentials: true,
 });
 
+export async function registerUser(data: { username: string; email: string; password: string }) {
+  const res = await api.post("auth/register/", data);
+  return res.data;
+}
+
+// Authorization: Bearer <access>
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
+// Auto-refresh si 401
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig | undefined;
 
-    // —— intento de refresh si vence el access ——
     if (error.response?.status === 401 && original && !original._retry) {
-      original._retry = true; // evita bucle
+      original._retry = true;
       try {
         const refresh = localStorage.getItem("refresh");
         if (!refresh) throw new Error("no-refresh");
+        // OJO: tu backend expone /api/auth/refresh/
+        const { data } = await axios.post(`${API_BASE}/auth/refresh/`, { refresh });
+        const newAccess = (data as any)?.access as string | undefined;
+        if (!newAccess) throw new Error("no-access");
+        localStorage.setItem("access", newAccess);
 
-        const { data } = await axios.post(`${BASE_URL}/auth/token/refresh/`, { refresh });
-
-        localStorage.setItem("access", (data as any).access);
         original.headers = original.headers ?? {};
-        original.headers["Authorization"] = `Bearer ${(data as any).access}`;
-
-        // Actualizo default para futuras requests
-        api.defaults.headers.common["Authorization"] = `Bearer ${(data as any).access}`;
-
+        original.headers["Authorization"] = `Bearer ${newAccess}`;
+        (api.defaults.headers.common as any)["Authorization"] = `Bearer ${newAccess}`;
         return api(original);
       } catch {
-        // refresh falló → logout
         localStorage.removeItem("access");
         localStorage.removeItem("refresh");
-        window.location.href = "/login";
+        // redirigir a login si lo deseas:
+        // window.location.href = "/login";
         return Promise.reject(error);
       }
     }
 
-    // —— mensajes más limpios si Django devuelve HTML (<!DOCTYPE...) ——
+    // Si Django manda HTML, generamos mensaje más legible
     if (error.response && typeof error.response.data === "string") {
       const txt = error.response.data as string;
       if (/<!DOCTYPE html>/i.test(txt)) {
         return Promise.reject({
           ...error,
-          message: "Error del servidor (HTML). Revisá la consola del backend para el detalle.",
+          message: "Error del servidor (HTML). Revisá logs del backend.",
         });
       }
     }
-
     return Promise.reject(error);
   }
 );

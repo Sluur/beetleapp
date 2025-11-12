@@ -15,7 +15,7 @@ export default function Home() {
             {/* IZQUIERDA: texto + CTAs (más grande) */}
             <div>
               <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.05]">
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600 bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-blue-600 via-indigo-600 to-fuchsia-600 bg-clip-text text-transparent">
                   BeetleApp
                 </span>
               </h1>
@@ -29,7 +29,7 @@ export default function Home() {
                   to={isAuthenticated ? "/observations" : "/login"}
                   className="inline-flex items-center justify-center rounded-xl px-7 py-3.5
                              text-base font-semibold text-white
-                             bg-gradient-to-r from-blue-600 via-indigo-600 to-fuchsia-600
+                             bg-linear-to-r from-blue-600 via-indigo-600 to-fuchsia-600
                              shadow-sm hover:shadow transition"
                 >
                   {isAuthenticated ? "Ir a mis observaciones" : "Comenzar ahora"}

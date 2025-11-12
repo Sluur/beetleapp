@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { api } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
 
 export default function Login() {
@@ -23,14 +22,15 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/token/", { username, password });
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
-      login(data.access);
+      const ok = await login(username, password); // ← usa AuthContext (guarda access+refresh)
+      if (!ok) {
+        setError("Credenciales inválidas");
+        return;
+      }
       const to = (loc.state as any)?.from?.pathname ?? "/observations";
       nav(to, { replace: true });
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || err?.response?.data?.non_field_errors?.[0] || "Credenciales inválidas";
+      const msg = err?.response?.data?.detail || err?.response?.data?.non_field_errors?.[0] || "No se pudo iniciar sesión";
       setError(msg);
     } finally {
       setLoading(false);
@@ -91,7 +91,6 @@ export default function Login() {
               {loading ? "Ingresando…" : "Entrar"}
             </button>
 
-            {/* Enlaces al final */}
             <div className="mt-4 flex items-center justify-between text-sm">
               <Link to="/register" className="text-neutral-700 hover:text-neutral-900 hover:underline">
                 Registrarse
@@ -103,7 +102,6 @@ export default function Login() {
           </form>
         </div>
 
-        {/* Columna derecha: imagen */}
         <div className="hidden md:block bg-neutral-200">
           <img src="/images/login-bg.jpg" alt="Login background" className="object-cover w-full h-full" />
         </div>
