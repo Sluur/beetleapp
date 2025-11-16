@@ -6,8 +6,9 @@ import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
 
-// Navbar con contexto
 function NavBar() {
   const { isAuthenticated, logout } = useAuth();
   const loc = useLocation();
@@ -55,7 +56,6 @@ function NavBar() {
   );
 }
 
-// Redirección raíz según sesión (opcional)
 function AuthGate() {
   const { isAuthenticated } = useAuth();
   return <Navigate to={isAuthenticated ? "/observations" : "/login"} replace />;
@@ -72,6 +72,12 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+
+            <Route path="/reset" element={<ResetPassword />} />
+
+ 
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* privado */}
             <Route element={<PrivateRoute />}>

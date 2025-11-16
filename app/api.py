@@ -181,21 +181,15 @@ class IsOwner(permissions.BasePermission):
 
 # --- utilidades de imagen -----------------------------------------------------
 
-def _needs_convert(uploaded) -> bool:
-    """¿El archivo NO es JPEG (por content-type o extensión)?"""
+def _needs_convert(uploaded):
     ct = (getattr(uploaded, "content_type", "") or "").lower()
     name = (getattr(uploaded, "name", "") or "").lower()
     return not (ct == "image/jpeg" or name.endswith(".jpg") or name.endswith(".jpeg"))
 
-
-def _as_jpeg(uploaded) -> InMemoryUploadedFile:
-    """Convierte PIL → JPEG (RGB, calidad 90) y devuelve un InMemoryUploadedFile."""
+def _as_jpeg(uploaded):
     img = Image.open(uploaded)
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-    buf = BytesIO()
-    img.save(buf, format="JPEG", quality=90)
-    buf.seek(0)
+    if img.mode != "RGB": img = img.convert("RGB")
+    buf = BytesIO(); img.save(buf, format="JPEG", quality=90); buf.seek(0)
     base, _ = os.path.splitext(getattr(uploaded, "name", "image"))
     return InMemoryUploadedFile(buf, "photo", base + ".jpg", "image/jpeg", buf.getbuffer().nbytes, None)
 
@@ -256,10 +250,14 @@ class ObservationViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         uploaded = self.request.FILES.get("photo")
-        photo_arg = _as_jpeg(uploaded) if (uploaded and _needs_convert(uploaded)) else uploaded
-        obs = serializer.save(user=self.request.user, **({"photo": photo_arg} if photo_arg else {}))
+        if not uploaded:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({"photo": "La foto es obligatoria."})
 
-        # Carga de inferencia opcional pasada por el cliente (preview)
+        photo_arg = _as_jpeg(uploaded) if _needs_convert(uploaded) else uploaded
+        obs = serializer.save(user=self.request.user, photo=photo_arg)
+
+        # Si además mandaste preview, se persiste igual:
         pl = self.request.data.get("predicted_label")
         pc = self.request.data.get("predicted_confidence")
         pv = self.request.data.get("predicted_version")

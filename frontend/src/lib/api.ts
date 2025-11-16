@@ -30,6 +30,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  await api.post("/auth/password/reset/", { email });
+}
+export async function confirmPasswordReset(params: { uid: string; token: string; new_password: string }): Promise<void> {
+  await api.post("/auth/password/reset/confirm/", params);
+}
+
 // Auto-refresh si 401
 api.interceptors.response.use(
   (response) => response,

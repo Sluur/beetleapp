@@ -1,1 +1,7 @@
 Generar Reporte
+
+Dudas:
+    Fotos permitidas, como funciona el modelo
+    Fotos con camara
+    Flujo de investigacion/uso
+    
