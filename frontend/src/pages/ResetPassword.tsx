@@ -34,7 +34,6 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       await confirmPasswordReset({ uid, token, new_password: pwd });
-      // podrías usar un toast; acá dejamos un redirect con estado
       nav("/login", {
         replace: true,
         state: { resetOk: true, msg: "Contraseña actualizada. Iniciá sesión con tu nueva clave." },

@@ -52,10 +52,10 @@ export default function ObservationCard({
               (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
       ) : (
-        <div className="w-full h-44 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="w-full h-44 bg-linear-to-br from-slate-50 to-slate-100 flex items-center justify-center">
           <div className="text-center">
             <div className="text-3xl text-slate-300 mb-2">📷</div>
             <div className="text-xs text-slate-400 font-medium">Sin imagen</div>
@@ -81,7 +81,7 @@ export default function ObservationCard({
         </div>
 
         {inference && (
-          <div className="mt-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 p-3 space-y-1">
+          <div className="mt-3 rounded-xl bg-linear-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 p-3 space-y-1">
             <div className="flex items-start gap-2">
               <span className="text-xs font-bold text-blue-700">Predicción:</span>
               <span className="text-xs font-semibold text-slate-900 flex-1">{inference.predicted_label}</span>
@@ -90,7 +90,7 @@ export default function ObservationCard({
               <span className="text-xs font-bold text-indigo-700">Confianza:</span>
               <div className="flex-1 flex items-center gap-2">
                 <div className="flex-1 h-2 bg-white rounded-full overflow-hidden border border-indigo-200">
-                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style={{ width: `${confPct}%` }} />
+                  <div className="h-full bg-linear-to-r from-blue-500 to-indigo-500 rounded-full" style={{ width: `${confPct}%` }} />
                 </div>
                 <span className="text-xs font-bold text-slate-700">{confPct!.toFixed(1)}%</span>
               </div>

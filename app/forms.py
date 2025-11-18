@@ -21,14 +21,11 @@ class ObservationForm(forms.ModelForm):
             return f
 
         img = Image.open(f)
-
-        # Normalizamos a RGB (JPG no soporta alfa)
         if img.mode not in ("RGB", "L"):
             img = img.convert("RGB")
         elif img.mode == "L":
             img = img.convert("RGB")
 
-        # Re-encodear SIEMPRE a JPEG para estandarizar
         buf = BytesIO()
         img.save(buf, format="JPEG", quality=90)
         buf.seek(0)
@@ -38,7 +35,7 @@ class ObservationForm(forms.ModelForm):
 
         return InMemoryUploadedFile(
             buf,
-            field_name="photo",        # <- nombre del campo real
+            field_name="photo",     
             name=new_name,
             content_type="image/jpeg",
             size=buf.getbuffer().nbytes,

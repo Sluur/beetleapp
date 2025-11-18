@@ -12,10 +12,9 @@ class Observation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-created_at"]  # coincide con tu default en API
+        ordering = ["-created_at"]
 
     def __str__(self):
-        # Fix: faltaba un espacio antes de la fecha
         return f"{self.user} @ ({self.latitude}, {self.longitude}) {self.date}"
 
 
@@ -44,13 +43,24 @@ class Species(models.Model):
 
 class Inference(models.Model):
     observation = models.OneToOneField(
-        "Observation", on_delete=models.CASCADE, related_name="inference"
+        "Observation",
+        on_delete=models.CASCADE,
+        related_name="inference",
     )
     predicted_label = models.CharField(max_length=120)
     confidence = models.FloatField()
     is_correct = models.BooleanField(null=True, blank=True)
-    species = models.ForeignKey(Species, null=True, blank=True, on_delete=models.SET_NULL)
-    model_version = models.ForeignKey(ModelVersion, null=True, on_delete=models.SET_NULL)
+    species = models.ForeignKey(
+        Species,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    model_version = models.ForeignKey(
+        ModelVersion,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

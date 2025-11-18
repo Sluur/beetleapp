@@ -12,7 +12,7 @@ export default function StatCard({ title, value, subtitle }: StatCardProps) {
                   hover:border-blue-300 transition-all duration-300"
     >
       <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</span>
-      <span className="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{value}</span>
+      <span className="text-4xl font-black bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{value}</span>
       {subtitle && <span className="text-xs text-slate-600 font-medium">{subtitle}</span>}
     </div>
   );

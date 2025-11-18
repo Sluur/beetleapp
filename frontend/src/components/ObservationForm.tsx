@@ -91,15 +91,15 @@ export default function ObservationForm({
 
   return (
     <form onSubmit={onSubmit} className={wrapperCls}>
-      {/* Header */}
+
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold tracking-tight bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
           Nueva observación
         </h1>
         <p className="text-base text-slate-600">Seleccioná un punto en el mapa y completá los datos</p>
       </div>
 
-      {/* Campos del formulario */}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <label className="flex flex-col gap-2">
           <span className="text-sm font-semibold text-slate-700">Fecha</span>
@@ -152,7 +152,7 @@ export default function ObservationForm({
           />
         </label>
 
-        {/* Drag & Drop para foto */}
+
         <div className="flex flex-col gap-2 sm:col-span-2">
           <span className="text-sm font-semibold text-slate-700">Foto</span>
 
@@ -174,7 +174,7 @@ export default function ObservationForm({
             <input ref={inputRef} type="file" accept="image/*,.tif,.tiff" onChange={onFileChange} className="sr-only" />
 
             <div className="flex flex-col items-center justify-center gap-4 text-slate-600">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500 to-indigo-500 text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19.35 10.04a7.49 7.49 0 00-14-2A5.994 5.994 0 006 20h13a4.5 4.5 0 00.35-9.96zM14 13h-2v3h-2l3-4 3 4h-2v-3z" />
                 </svg>
@@ -205,8 +205,7 @@ export default function ObservationForm({
         </div>
       </div>
 
-      {/* Predicción del modelo */}
-      <div className="rounded-2xl border-2 border-slate-200 shadow-lg p-5 bg-gradient-to-br from-white to-slate-50">
+      <div className="rounded-2xl border-2 border-slate-200 shadow-lg p-5 bg-linear-to-br from-white to-slate-50">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <span className="text-xl">🤖</span>
@@ -244,7 +243,7 @@ export default function ObservationForm({
               </div>
             </div>
 
-            {/* Barra de progreso */}
+
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-600">Nivel de confianza</span>
@@ -252,7 +251,7 @@ export default function ObservationForm({
               </div>
               <div className="h-3 bg-slate-200 rounded-full overflow-hidden border-2 border-slate-300">
                 <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                  className="h-full bg-linear-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
                   style={{ width: `${previewPct}%` }}
                 />
               </div>
@@ -261,7 +260,7 @@ export default function ObservationForm({
         )}
       </div>
 
-      {/* Footer con botón de guardar */}
+
       <div className="sticky bottom-0 pt-5 border-t-2 border-slate-200 bg-white/95 backdrop-blur-sm">
         {error && <div className="mb-4 p-4 rounded-xl bg-red-50 border-2 border-red-200 text-red-700 text-sm font-medium">{error}</div>}
 
@@ -269,7 +268,7 @@ export default function ObservationForm({
           {!canSave && <span className="text-xs text-slate-600 font-medium">⚠️ Completá fecha, lat/lon, foto y esperá la predicción</span>}
           <button
             type="submit"
-            className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white 
+            className="w-full sm:w-auto rounded-xl bg-linear-to-r from-blue-500 to-indigo-500 text-white 
                      px-8 py-3 font-bold hover:from-blue-600 hover:to-indigo-600 
                      focus:outline-none focus:ring-4 focus:ring-blue-300
                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-blue-500 disabled:hover:to-indigo-500

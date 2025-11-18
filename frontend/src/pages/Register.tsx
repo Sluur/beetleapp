@@ -42,11 +42,11 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex items-center justify-center px-4">
       <div className="w-full max-w-5xl bg-white/80 backdrop-blur-md shadow-2xl rounded-3xl overflow-hidden border-2 border-slate-200 grid md:grid-cols-2">
         <div className="p-10 flex flex-col justify-center">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+            <h2 className="text-3xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
               Crear cuenta
             </h2>
             <p className="text-sm text-slate-600">Completá tus datos para registrarte</p>
@@ -121,7 +121,7 @@ export default function Register() {
 
             <button
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl 
+              className="w-full bg-linear-to-r from-blue-500 to-indigo-500 text-white rounded-xl 
                        px-4 py-3 font-bold hover:from-blue-600 hover:to-indigo-600 
                        disabled:opacity-50 disabled:cursor-not-allowed
                        shadow-lg hover:shadow-xl transition-all duration-300"
@@ -141,9 +141,9 @@ export default function Register() {
         </div>
 
         <div className="hidden md:block relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 z-10" />
+          <div className="absolute inset-0 bg-linear-to-br from-blue-500/20 to-indigo-500/20 z-10" />
           <img src="/images/login-bg.jpg" alt="Register background" className="object-cover w-full h-full" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent z-20" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent z-20" />
           <div className="absolute bottom-8 left-8 right-8 z-30 text-white">
             <h3 className="text-2xl font-bold mb-2">BeetleApp</h3>
             <p className="text-sm text-white/90">Plataforma de identificación de escarabajos mediante Deep Learning</p>

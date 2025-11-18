@@ -7,14 +7,12 @@ from django.utils.http import urlsafe_base64_decode
 
 
 class InferenceMiniSerializer(serializers.ModelSerializer):
-    """Vista compacta de la inferencia asociada a una observación."""
     class Meta:
         model = Inference
         fields = ["predicted_label", "confidence", "created_at"]
 
 
 class ObservationSerializer(serializers.ModelSerializer):
-    """Serializer principal para la API (incluye photo_url e inference mini)."""
     inference = InferenceMiniSerializer(read_only=True)
     photo_url = serializers.SerializerMethodField()
 

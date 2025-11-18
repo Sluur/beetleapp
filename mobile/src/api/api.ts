@@ -1,4 +1,3 @@
-// src/api/api.ts
 import axios, { AxiosError } from "axios";
 import { API_BASE } from "../config";
 
@@ -7,7 +6,6 @@ export const api = axios.create({
   timeout: 30000,
 });
 
-// ------------------ Auth ------------------
 
 export type TokenResponse = {
   access: string;
@@ -29,16 +27,4 @@ export async function refreshAccessApi(refresh: string): Promise<string | null> 
   }
 }
 
-// Opcionales para más adelante:
-export async function registerUser(data: { username: string; email: string; password: string }) {
-  const res = await api.post("/auth/register/", data);
-  return res.data;
-}
 
-export async function requestPasswordReset(email: string): Promise<void> {
-  await api.post("/auth/password/reset/", { email });
-}
-
-export async function confirmPasswordReset(params: { uid: string; token: string; new_password: string }): Promise<void> {
-  await api.post("/auth/password/reset/confirm/", params);
-}

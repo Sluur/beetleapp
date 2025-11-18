@@ -1,7 +1,4 @@
-// src/api/observations.ts
 import { api } from "./api";
-
-/* ========= Tipos (basados en tu frontend web) ========= */
 
 export type InferenceMini = {
   predicted_label: string;
@@ -11,7 +8,7 @@ export type InferenceMini = {
 
 export type Observation = {
   id: number;
-  date: string; // "YYYY-MM-DD"
+  date: string;
   place_text?: string;
   latitude: number | string;
   longitude: number | string;
@@ -26,23 +23,17 @@ export type CreateObsInput = {
   place_text?: string;
   latitude: number | string;
   longitude: number | string;
-
-  // En web es File, en mobile usamos { uri, name, type }
   photo?: {
     uri: string;
     name: string;
     type: string;
   } | null;
-
-  // Campos opcionales para guardar la predicción del preview
   predicted_label?: string;
   predicted_confidence?: number | string;
   predicted_version?: string;
 };
 
 export type UpdateObsInput = Partial<CreateObsInput>;
-
-/* ========= Helper: arma FormData (mobile) ========= */
 
 export function buildObservationFormData(input: CreateObsInput | UpdateObsInput) {
   const fd = new FormData();
@@ -53,7 +44,6 @@ export function buildObservationFormData(input: CreateObsInput | UpdateObsInput)
   if ("longitude" in input && input.longitude != null) fd.append("longitude", String(input.longitude));
 
   if ("photo" in input && input.photo) {
-    // React Native: objeto con uri/name/type
     fd.append("photo", {
       uri: input.photo.uri,
       name: input.photo.name,
@@ -74,9 +64,6 @@ export function buildObservationFormData(input: CreateObsInput | UpdateObsInput)
   return fd;
 }
 
-/* ========= API ========= */
-
-// GET /api/observations/
 export async function listObservations(
   accessToken: string,
   params?: { search?: string; ordering?: string; page?: number }
@@ -91,7 +78,6 @@ export async function listObservations(
   return Array.isArray(data) ? (data as Observation[]) : (data.results as Observation[]);
 }
 
-// GET /api/observations/:id/
 export async function getObservation(accessToken: string, id: number): Promise<Observation> {
   const { data } = await api.get<Observation>(`/observations/${id}/`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -99,7 +85,6 @@ export async function getObservation(accessToken: string, id: number): Promise<O
   return data;
 }
 
-// POST /api/observations/  (multipart)
 export async function createObservation(accessToken: string, input: CreateObsInput): Promise<Observation> {
   const fd = buildObservationFormData(input);
   const { data } = await api.post<Observation>("/observations/", fd, {
@@ -111,7 +96,6 @@ export async function createObservation(accessToken: string, input: CreateObsInp
   return data;
 }
 
-// PATCH /api/observations/:id/  (multipart si hay foto; JSON si no)
 export async function updateObservation(accessToken: string, id: number, input: UpdateObsInput): Promise<Observation> {
   const hasFile = !!input.photo;
   const body = hasFile ? buildObservationFormData(input) : input;
@@ -126,14 +110,12 @@ export async function updateObservation(accessToken: string, id: number, input: 
   return data;
 }
 
-// DELETE /api/observations/:id/
 export async function deleteObservation(accessToken: string, id: number): Promise<void> {
   await api.delete(`/observations/${id}/`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
 
-// POST /api/observations/:id/classify/
 export async function classifyObservationApi(accessToken: string, observationId: number) {
   const { data } = await api.post(
     `/observations/${observationId}/classify/`,
@@ -151,11 +133,10 @@ export async function classifyObservationApi(accessToken: string, observationId:
   };
 }
 
-// POST /api/predict_preview/
 export async function predictPreview(accessToken: string, file: { uri: string; name: string; type: string }) {
   const fd = new FormData();
   fd.append("image", file as any);
-  const res = await api.post("predict_preview/", fd, {
+  const res = await api.post("/predict_preview/", fd, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "multipart/form-data",

@@ -3,11 +3,11 @@ import { api } from "../lib/api";
 
 type AuthCtx = {
   isAuthenticated: boolean;
-  token: string | null; // compat: alias de access
+  token: string | null; 
   access: string | null;
   refresh: string | null;
-  loginWithToken: (access: string, refresh?: string | null) => void; // compat para flujos ya existentes
-  login: (username: string, password: string) => Promise<boolean>; // recomendado
+  loginWithToken: (access: string, refresh?: string | null) => void; 
+  login: (username: string, password: string) => Promise<boolean>; 
   logout: () => void;
   refreshAccess: () => Promise<string | null>;
 };
@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [access, setAccess] = useState<string | null>(() => localStorage.getItem(LS_ACCESS));
   const [refresh, setRefresh] = useState<string | null>(() => localStorage.getItem(LS_REFRESH));
 
-  // sincroniza múltiples pestañas
+
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === LS_ACCESS) setAccess(localStorage.getItem(LS_ACCESS));
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshAccess = useCallback(async (): Promise<string | null> => {
     if (!refresh) return null;
     try {
-      const { data } = await api.post("/auth/refresh/", { refresh }); // backend: /api/auth/refresh/
+      const { data } = await api.post("/auth/refresh/", { refresh });
       const newAccess: string | null = data?.access ?? null;
       if (newAccess) persist(newAccess, refresh);
       return newAccess;
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (username: string, password: string) => {
       try {
-        const { data } = await api.post("/auth/token/", { username, password }); // backend: /api/auth/token/
+        const { data } = await api.post("/auth/token/", { username, password }); 
         const a = data?.access as string | undefined;
         const r = data?.refresh as string | undefined;
         if (a && r) {
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthCtx>(
     () => ({
       isAuthenticated: !!access,
-      token: access, // compat con código existente
+      token: access, 
       access,
       refresh,
       loginWithToken,

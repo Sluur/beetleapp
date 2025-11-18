@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useState, useEffect, useCallback } from "react"; // 👈 agregado useCallback
+import { useState, useEffect, useCallback } from "react"; 
 import MapPane from "../components/MapPane";
 import ObservationForm from "../components/ObservationForm";
 import { predictPreview, createObservation } from "../lib/observations";
@@ -42,7 +42,7 @@ export default function NewObservation() {
   const handleMapChange = useCallback((a: number, b: number) => {
     setLat(a);
     setLon(b);
-  }, []); // 👈 función estable (no cambia en cada render)
+  }, []);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -82,7 +82,7 @@ export default function NewObservation() {
       <div className="h-full grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="h-full p-4 bg-white">
           <div className="h-full rounded-2xl overflow-hidden border border-neutral-200 shadow-sm">
-            <MapPane lat={lat} lon={lon} onChange={handleMapChange} /> {/* 👈 cambiá esto */}
+            <MapPane lat={lat} lon={lon} onChange={handleMapChange} />
           </div>
         </div>
 

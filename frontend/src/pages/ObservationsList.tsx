@@ -127,25 +127,25 @@ export default function ObservationsPage() {
   }, [items, showGrouped]);
 
   return (
-    <div className="h-[calc(100vh-64px)] overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
+    <div className="h-[calc(100vh-64px)] overflow-hidden bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
       <div className="h-full grid grid-cols-1 md:grid-cols-2 gap-0 min-h-0">
-        {/* MAPA IZQUIERDA */}
+
         <div className="h-full p-4 min-h-0">
           <div className="h-full rounded-3xl overflow-hidden border-2 border-slate-200 shadow-xl bg-white">
             <MapAllObservations points={points} activeId={activeId ?? undefined} onSelect={handleSelectOnMap} />
           </div>
         </div>
 
-        {/* LISTA DERECHA */}
+
         <div className="h-full bg-white/80 backdrop-blur-sm border-l-2 border-slate-200 flex flex-col min-h-0">
-          {/* Toolbar sticky */}
+
           <div ref={toolbarRef} className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b-2 border-slate-200">
             <div className="px-6 py-4 flex items-center gap-4">
-              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent flex-1">
+              <h1 className="text-4xl font-bold tracking-tight bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent flex-1">
                 Observaciones
               </h1>
 
-              {/* Buscador */}
+
               <div className="relative w-64">
                 <svg
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
@@ -168,7 +168,7 @@ export default function ObservationsPage() {
                 />
               </div>
 
-              {/* Orden */}
+
               <select
                 value={ordering}
                 onChange={(e) => setOrdering(e.target.value)}
@@ -186,7 +186,6 @@ export default function ObservationsPage() {
             </div>
           </div>
 
-          {/* Contenido scrolleable */}
           <div className="flex-1 overflow-y-auto px-5 py-5 min-h-0" style={{ ["--toolbar-h" as any]: `${toolbarH}px` }}>
             {loading && (
               <div className="flex items-center justify-center p-12">
@@ -206,14 +205,14 @@ export default function ObservationsPage() {
               </div>
             )}
 
-            {/* Render: agrupado por tipo o lista plana */}
+
             {showGrouped ? (
               <div className="space-y-10">
                 {groups.map((g, i) => (
                   <section key={g.label}>
                     {i > 0 && <div className="h-px bg-linear-to-r from-transparent via-slate-200 to-transparent" />}
 
-                    {/* header de grupo */}
+
                     <div
                       className="z-10 bg-white/95 backdrop-blur-md px-3 py-3 -mx-3 rounded-xl border-2 border-slate-200 shadow-sm"
                       style={{ top: `${toolbarH + 8}px` }}
@@ -226,7 +225,6 @@ export default function ObservationsPage() {
                       </div>
                     </div>
 
-                    {/* grid de cards */}
                     <div className="mt-4 grid gap-4 xl:grid-cols-2">
                       {g.list.map((o) => {
                         const lat = typeof o.latitude === "string" ? parseFloat(o.latitude) : o.latitude;
@@ -290,7 +288,7 @@ export default function ObservationsPage() {
         </div>
       </div>
 
-      {/* Drawer */}
+
       <ObservationDetailDrawer
         id={detailId}
         open={detailOpen}

@@ -58,7 +58,7 @@ export default function ReportsPage() {
   return (
     <div className="h-[calc(100vh-64px)] overflow-y-auto bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Header */}
+
         <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -90,7 +90,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Filtros */}
+
         <div className="mb-8 rounded-2xl border-2 border-slate-200 bg-white/80 backdrop-blur-sm p-6 shadow-lg">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
@@ -150,7 +150,7 @@ export default function ReportsPage() {
 
         {!loading && summary && (
           <div className="flex flex-col gap-8">
-            {/* KPIs */}
+
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <StatCard
                 title="Total de observaciones"
@@ -164,13 +164,11 @@ export default function ReportsPage() {
               />
             </div>
 
-            {/* Top especies */}
             <section className="space-y-4">
               <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">Top especies</h2>
               <TopSpeciesList items={summary.species_counts} />
             </section>
 
-            {/* Observaciones por fecha */}
             <section className="space-y-4">
               <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">Observaciones por día</h2>
               {summary.observations_by_date.length === 0 ? (

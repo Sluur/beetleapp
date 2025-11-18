@@ -1,7 +1,6 @@
-// src/screens/MapScreen.tsx
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import MapView, { Marker, Region } from "react-native-maps";
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, SafeAreaView, StatusBar } from "react-native";
+import MapView, { Marker, Region, Callout } from "react-native-maps";
 import { useAuth } from "../context/AuthContext";
 import { listObservations, Observation } from "../api/observations";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -22,7 +21,6 @@ export default function MapScreen({ navigation }: Props) {
   const { access } = useAuth();
   const [items, setItems] = useState<Observation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const mapRef = useRef<MapView | null>(null);
 
   useEffect(() => {
@@ -32,15 +30,12 @@ export default function MapScreen({ navigation }: Props) {
       try {
         const rows = await listObservations(access);
         setItems(rows);
-        setError("");
       } catch (err) {
-        console.warn("Error loading observations (map)", err);
-        setError("No se pudieron cargar las observaciones.");
+        console.warn("Error loading observations", err);
       } finally {
         setLoading(false);
       }
     };
-
     load();
   }, [access]);
 
@@ -66,7 +61,6 @@ export default function MapScreen({ navigation }: Props) {
 
   const initialRegion: Region = useMemo(() => {
     if (points.length === 0) {
-      // centro por defecto (Salta)
       return {
         latitude: -24.7821,
         longitude: -65.4232,
@@ -84,12 +78,11 @@ export default function MapScreen({ navigation }: Props) {
     };
   }, [points]);
 
-  // Ajustar zoom al cargar
   useEffect(() => {
     if (points.length > 0 && mapRef.current) {
       mapRef.current.fitToCoordinates(
         points.map((p) => ({ latitude: p.latitude, longitude: p.longitude })),
-        { edgePadding: { top: 60, bottom: 60, left: 60, right: 60 }, animated: true }
+        { edgePadding: { top: 100, bottom: 100, left: 60, right: 60 }, animated: true }
       );
     }
   }, [points]);
@@ -97,16 +90,7 @@ export default function MapScreen({ navigation }: Props) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
-        <Text style={{ marginTop: 8 }}>Cargando mapa…</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.center}>
-        <Text style={{ color: "red" }}>{error}</Text>
+        <ActivityIndicator size="large" color="#000" />
       </View>
     );
   }
@@ -114,32 +98,115 @@ export default function MapScreen({ navigation }: Props) {
   if (points.length === 0) {
     return (
       <View style={styles.center}>
-        <Text>No hay observaciones con coordenadas.</Text>
+        <Text style={styles.emptyIcon}>🗺️</Text>
+        <Text style={styles.emptyText}>Sin observaciones</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Text style={styles.backText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Mapa</Text>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{points.length}</Text>
+        </View>
+      </View>
+
+      {/* Map */}
       <MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={initialRegion}>
         {points.map((p) => (
-          <Marker
-            key={p.id}
-            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
-            title={p.place_text || `Obs #${p.id}`}
-            description={p.date}
-            onPress={() => navigation.navigate("ObservationDetail", { id: p.id })}
-          />
+          <Marker key={p.id} coordinate={{ latitude: p.latitude, longitude: p.longitude }}>
+            <Callout onPress={() => navigation.navigate("ObservationDetail", { id: p.id })}>
+              <View style={styles.callout}>
+                <Text style={styles.calloutTitle}>{p.place_text || `Obs #${p.id}`}</Text>
+                <Text style={styles.calloutDate}>{p.date}</Text>
+              </View>
+            </Callout>
+          </Marker>
         ))}
       </MapView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 16,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    zIndex: 10,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+  },
+  backText: {
+    fontSize: 28,
+    color: "#000",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#000",
+  },
+  badge: {
+    backgroundColor: "#000",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 32,
+    alignItems: "center",
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  callout: {
+    width: 180,
+    padding: 8,
+  },
+  calloutTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: 4,
+  },
+  calloutDate: {
+    fontSize: 13,
+    color: "#666",
+  },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 17,
+    color: "#666",
   },
 });

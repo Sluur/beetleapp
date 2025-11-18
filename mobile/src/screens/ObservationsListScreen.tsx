@@ -1,6 +1,18 @@
-// src/screens/ObservationsListScreen.tsx
-import React, { useEffect, useState, useMemo } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Button, TextInput } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Feather, Ionicons } from "@expo/vector-icons";
+
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  TextInput,
+  SafeAreaView,
+  StatusBar,
+} from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/RootNavigator";
 import { useAuth } from "../context/AuthContext";
@@ -8,22 +20,13 @@ import { listObservations, Observation } from "../api/observations";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ObservationsList">;
 
-export type ObsPoint = {
-  id: number;
-  date: string;
-  place_text?: string;
-  latitude: number;
-  longitude: number;
-  photo_url?: string;
-};
-
 export default function ObservationsListScreen({ navigation }: Props) {
   const { access, logout } = useAuth();
   const [items, setItems] = useState<Observation[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [ordering, setOrdering] = useState("-created_at");
-  const [error, setError] = useState("");
+  const [searchText, setSearchText] = useState("");
+  const [searchTimer, setSearchTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -32,162 +35,288 @@ export default function ObservationsListScreen({ navigation }: Props) {
       try {
         const rows = await listObservations(access, {
           search: query || undefined,
-          ordering: ordering || undefined,
         });
         setItems(rows);
-        setError("");
       } catch (err) {
         console.warn("Error loading observations", err);
-        setError("No se pudo cargar la lista.");
       } finally {
         setLoading(false);
       }
     };
-
     load();
-  }, [access, query, ordering]);
+  }, [access, query]);
 
-  const points: ObsPoint[] = useMemo(
-    () =>
-      items
-        .map((o) => {
-          const lat = typeof o.latitude === "string" ? parseFloat(o.latitude) : o.latitude;
-          const lon = typeof o.longitude === "string" ? parseFloat(o.longitude) : o.longitude;
-          const photo = (o as any).photo_url || (o as any).photo || undefined;
-          return {
-            id: o.id,
-            date: o.date,
-            place_text: o.place_text,
-            latitude: lat as number,
-            longitude: lon as number,
-            photo_url: photo,
-          } as ObsPoint;
-        })
-        .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude)),
-    [items]
-  );
+  const handleSearchChange = (text: string) => {
+    setSearchText(text);
+
+    if (searchTimer) {
+      clearTimeout(searchTimer);
+    }
+
+    const timer = setTimeout(() => {
+      setQuery(text);
+    }, 500);
+
+    setSearchTimer(timer);
+  };
 
   const renderItem = ({ item }: { item: Observation }) => {
-    const photo = (item as any).photo_url || (item as any).photo || undefined;
+    const photo = (item as any).photo_url || (item as any).photo;
+    const conf = item.inference?.confidence
+      ? item.inference.confidence <= 1
+        ? item.inference.confidence * 100
+        : item.inference.confidence
+      : null;
 
     return (
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("ObservationDetail", { id: item.id })}>
+      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("ObservationDetail", { id: item.id })} activeOpacity={0.6}>
         {photo ? (
           <Image source={{ uri: photo }} style={styles.image} />
         ) : (
-          <View style={[styles.image, styles.placeholder]}>
-            <Text>Sin foto</Text>
+          <View style={styles.placeholder}>
+            <Text style={styles.placeholderText}>📷</Text>
           </View>
         )}
+
         <View style={styles.info}>
+          <Text style={styles.place} numberOfLines={1}>
+            {item.place_text || "Sin ubicación"}
+          </Text>
           <Text style={styles.date}>{item.date}</Text>
-          <Text style={styles.place}>{item.place_text || "Sin lugar"}</Text>
+
           {item.inference && (
-            <Text style={styles.inference}>
-              {item.inference.predicted_label} ({Math.round(item.inference.confidence * 100)}%)
-            </Text>
+            <View style={styles.tag}>
+              <Text style={styles.tagText} numberOfLines={1}>
+                {item.inference.predicted_label}
+              </Text>
+              <Text style={styles.confidence}>{conf!.toFixed(0)}%</Text>
+            </View>
           )}
         </View>
       </TouchableOpacity>
     );
   };
 
-  if (loading) {
+  if (loading && items.length === 0) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <ActivityIndicator size="large" color="#000" />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.topBar}>
-        <Button title="Nueva" onPress={() => navigation.navigate("NewObservation")} />
-        {/* este lo usaremos para el mapa */}
-        <Button title="Mapa" onPress={() => navigation.navigate("Map")} />
-        <Button title="Salir" onPress={logout} />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+
+      <View style={styles.header}>
+        <Text style={styles.title}>Observaciones</Text>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate("Map")}>
+            <Ionicons name="location-sharp" size={22} color="#fff" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.iconBtn} onPress={logout}>
+            <Feather name="power" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <View style={styles.filters}>
-        <TextInput style={styles.search} placeholder="Buscar por lugar…" value={query} onChangeText={setQuery} />
-        {/* Para no complicar con picker nativo, de momento un input simple.
-           Más adelante lo cambiamos a Picker o un menú. */}
+      <View style={styles.searchBox}>
+        <Text style={styles.searchIcon}>🔍</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar..."
+          placeholderTextColor="#999"
+          value={searchText}
+          onChangeText={handleSearchChange}
+        />
       </View>
 
-      {error ? (
-        <View style={styles.center}>
-          <Text style={{ color: "red" }}>{error}</Text>
+      {items.length === 0 && !loading ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyIcon}>📭</Text>
+          <Text style={styles.emptyText}>No hay observaciones</Text>
         </View>
       ) : (
         <FlatList
           data={items}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
         />
       )}
-    </View>
+
+      <TouchableOpacity style={styles.floatingBtn} onPress={() => navigation.navigate("NewObservation")} activeOpacity={0.8}>
+        <Text style={styles.floatingBtnIcon}>+</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  topBar: {
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 12,
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: "#000",
+    letterSpacing: -0.5,
+  },
+  headerButtons: {
+    flexDirection: "row",
     gap: 8,
   },
-  filters: {
-    paddingHorizontal: 12,
-    paddingBottom: 8,
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  search: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: "white",
+  iconWhite: {
+    fontSize: 20,
   },
-  listContent: {
-    padding: 12,
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    height: 48,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 24,
+  },
+  searchIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#000",
+  },
+  list: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
   },
   card: {
     flexDirection: "row",
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 12,
     overflow: "hidden",
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#eee",
   },
   image: {
-    width: 96,
-    height: 96,
+    width: 100,
+    height: 100,
+    backgroundColor: "#f5f5f5",
   },
   placeholder: {
+    width: 100,
+    height: 100,
+    backgroundColor: "#f5f5f5",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#e2e8f0",
+  },
+  placeholderText: {
+    fontSize: 32,
+    opacity: 0.3,
   },
   info: {
     flex: 1,
-    padding: 8,
-  },
-  date: {
-    fontWeight: "bold",
+    padding: 12,
+    justifyContent: "center",
+    gap: 4,
   },
   place: {
-    color: "#64748b",
-  },
-  inference: {
-    marginTop: 4,
-    color: "#1d4ed8",
+    fontSize: 17,
     fontWeight: "600",
+    color: "#000",
+    marginBottom: 2,
+  },
+  date: {
+    fontSize: 14,
+    color: "#666",
+  },
+  tag: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginTop: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    gap: 6,
+  },
+  tagText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#000",
+    maxWidth: 140,
+  },
+  confidence: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#666",
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  empty: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingBottom: 80,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 17,
+    color: "#666",
+  },
+  floatingBtn: {
+    position: "absolute",
+    bottom: 32,
+    right: 20,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  floatingBtnIcon: {
+    fontSize: 32,
+    color: "#fff",
+    fontWeight: "100",
   },
 });

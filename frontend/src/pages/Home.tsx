@@ -7,16 +7,14 @@ export default function Home() {
   return (
     <div className="h-[calc(100vh-56px)] overflow-y-auto bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
       <main>
-        {/* HERO */}
         <section className="relative overflow-hidden">
-          {/* Efectos de fondo */}
           <div className="absolute inset-0 bg-grid-slate-100 mask-[linear-gradient(0deg,transparent,black)] pointer-events-none" />
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-linear-to-br from-blue-400/20 to-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-linear-to-tr from-fuchsia-400/20 to-purple-600/20 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 min-h-[85vh] flex items-center">
             <div className="grid items-center gap-12 lg:gap-20 md:grid-cols-2 w-full">
-              {/* IZQUIERDA: texto + CTAs */}
+
               <div className="space-y-6">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-linear-to-r from-blue-500/10 via-indigo-500/10 to-fuchsia-500/10 border border-blue-200/50 backdrop-blur-sm">
                   <span className="w-2 h-2 rounded-full bg-linear-to-r from-blue-500 to-indigo-500 animate-pulse" />
@@ -77,26 +75,21 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* DERECHA: imagen */}
-              <div className="relative flex justify-center items-center">
-                <div className="absolute inset-0 bg-linear-to-br from-blue-400/20 via-indigo-400/20 to-fuchsia-400/20 rounded-[3rem] blur-3xl" />
-                <div className="relative bg-linear-to-br from-white/40 to-white/20 backdrop-blur-md rounded-[3rem] p-8 border border-white/50 shadow-2xl">
-                  <img
-                    src="/images/beetle.png"
-                    alt="Escarabajo acuático"
-                    className="w-full h-[380px] md:h-[440px] lg:h-[480px] object-contain select-none drop-shadow-2xl"
-                    draggable={false}
-                  />
-                  <div className="absolute bottom-6 right-6 rounded-2xl bg-white/95 backdrop-blur-sm px-4 py-2 text-xs font-semibold text-slate-700 shadow-lg border border-slate-200">
-                    Dytiscinae · buceadores
-                  </div>
+              <div className="relative flex flex-col items-center justify-center">
+                <img
+                  src="/images/beetle.png"
+                  alt="Escarabajo acuático"
+                  className="w-full max-w-xl h-auto object-contain select-none"
+                  draggable={false}
+                />
+                <div className="mt-4 rounded-2xl bg-white/90 backdrop-blur-sm px-4 py-2 text-xs font-semibold text-slate-700 shadow-md border border-slate-200">
+                  Dytiscinae · buceadores
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* FUNCIONALIDADES */}
         <section id="funcionalidades" className="relative py-20 md:py-28">
           <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16 space-y-4">
@@ -112,7 +105,6 @@ export default function Home() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
-              {/* Card 1 */}
               <div
                 className="group relative rounded-3xl bg-linear-to-br from-white to-blue-50/30 p-8 border-2 border-blue-100 
                             hover:border-blue-300 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 
@@ -134,7 +126,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Card 2 */}
               <div
                 className="group relative rounded-3xl bg-linear-to-br from-white to-indigo-50/30 p-8 border-2 border-indigo-100 
                             hover:border-indigo-300 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 
@@ -142,7 +133,7 @@ export default function Home() {
               >
                 <div className="absolute top-6 right-6 text-4xl opacity-10 group-hover:opacity-20 transition-opacity">📊</div>
                 <div className="relative space-y-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-brrom-indigo-500 to-indigo-600 text-white text-2xl shadow-lg">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-500 to-indigo-600 text-white text-2xl shadow-lg">
                     📊
                   </div>
                   <div>
@@ -155,7 +146,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Card 3 */}
               <div
                 className="group relative rounded-3xl bg-linear-to-br from-white to-fuchsia-50/30 p-8 border-2 border-fuchsia-100 
                             hover:border-fuchsia-300 hover:shadow-2xl hover:shadow-fuchsia-500/10 hover:-translate-y-1 
@@ -179,7 +169,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* SOBRE EL PROYECTO */}
         <section id="sobre-proyecto" className="relative py-20 md:py-28 bg-linear-to-b from-slate-50 to-white">
           <div className="mx-auto w-full max-w-5xl px-6">
             <div className="text-center mb-12 space-y-4">
@@ -212,7 +201,6 @@ export default function Home() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {/* GitHub */}
               <a
                 href="https://github.com/Sluur/beetleapp"
                 target="_blank"
@@ -230,7 +218,6 @@ export default function Home() {
                 <p className="text-sm text-slate-600">Código fuente de la aplicación web y del servicio de inferencia.</p>
               </a>
 
-              {/* Trabajo académico */}
               <div className="rounded-2xl border-2 border-slate-200 bg-white p-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-indigo-500 text-white text-xl font-bold shadow-lg mb-4">
                   📚
@@ -241,7 +228,6 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Stack */}
               <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 md:col-span-2 lg:col-span-1">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-fuchsia-500 to-purple-500 text-white text-xl font-bold shadow-lg mb-4">
                   ⚡
@@ -254,7 +240,6 @@ export default function Home() {
         </section>
       </main>
 
-      {/* Footer */}
       <footer className="relative py-8 text-center border-t-2 border-slate-200 bg-white">
         <div className="text-sm text-slate-600">
           <span className="font-semibold text-slate-900">© {new Date().getFullYear()} BeetleApp</span>

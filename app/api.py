@@ -1,33 +1,31 @@
 from typing import Any, Dict
 from io import BytesIO
 import os
+import csv
+import json
+import requests
 
-from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.db.models import Q, Value, CharField, QuerySet
-from django.db.models.functions import Lower, Coalesce
-from rest_framework import viewsets, permissions
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from PIL import Image
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.mail import send_mail
-from django.conf import settings
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-
-from django.db.models import Count
-from django.utils.dateparse import parse_date
+from django.db.models import Q, Value, CharField, QuerySet, Count
+from django.db.models.functions import Lower, Coalesce
 from django.http import HttpResponse
-import csv
+from django.shortcuts import get_object_or_404
+from django.utils.dateparse import parse_date
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
+from PIL import Image
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
-from rest_framework import permissions, parsers
+from rest_framework import viewsets, permissions
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-import requests, json
 
 from .serializers import (
     ObservationSerializer,
@@ -36,42 +34,61 @@ from .serializers import (
     PasswordResetConfirmSerializer,
 )
 from .models import Observation, Inference, ModelVersion
+
 User = get_user_model()
 
-# ---------- Usuarios ----------
+
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         ser = RegisterSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         user = ser.save()
-        return Response({"id": user.id, "username": user.username, "email": user.email}, status=201)
+        return Response(
+            {"id": user.id, "username": user.username, "email": user.email},
+            status=201,
+        )
+
 
 class PasswordResetRequestView(APIView):
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         ser = PasswordResetRequestSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         email = ser.validated_data["email"]
+
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response({"detail": "Si el email existe, se enviará un enlace."})
+
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = PasswordResetTokenGenerator().make_token(user)
         frontend = getattr(settings, "FRONTEND_URL", "http://localhost:5173")
         reset_url = f"{frontend}/reset?uid={uid}&token={token}"
+
         subject = "BeetleApp — Restablecer contraseña"
         message = (
             f"Hola {user.username},\n\n"
             f"Usá este enlace para restablecer tu contraseña:\n{reset_url}\n\n"
             f"Si no fuiste vos, ignorá este mensaje."
         )
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
         return Response({"detail": "Si el email existe, se enviará un enlace."})
+
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [permissions.AllowAny]
+
     def post(self, request):
         ser = PasswordResetConfirmSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
@@ -80,15 +97,16 @@ class PasswordResetConfirmView(APIView):
         user.save()
         return Response({"detail": "Contraseña actualizada."})
 
+
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
         u = request.user
         return Response({"id": u.id, "username": u.username, "email": u.email})
 
-# ---------- IA / classify / preview / validate ----------
+
 class ClassifyObservationView(APIView):
-    """POST /api/observations/<id>/classify/ -> llama a Flask y crea Inference (1:1)."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, observation_id: int):
@@ -96,13 +114,15 @@ class ClassifyObservationView(APIView):
 
         if getattr(obs, "inference", None):
             inf = obs.inference
-            return Response({
-                "id": inf.id,
-                "predicted_label": inf.predicted_label,
-                "confidence": float(inf.confidence),
-                "is_correct": inf.is_correct,
-                "created_at": inf.created_at.isoformat(),
-            })
+            return Response(
+                {
+                    "id": inf.id,
+                    "predicted_label": inf.predicted_label,
+                    "confidence": float(inf.confidence),
+                    "is_correct": inf.is_correct,
+                    "created_at": inf.created_at.isoformat(),
+                }
+            )
 
         if not obs.photo:
             return Response({"detail": "La observación no tiene foto."}, status=400)
@@ -113,13 +133,23 @@ class ClassifyObservationView(APIView):
             try:
                 r = requests.post(url, files=files, timeout=30)
             except requests.RequestException as e:
-                return Response({"detail": "No se pudo contactar al servicio de IA.", "error": str(e)}, status=502)
+                return Response(
+                    {
+                        "detail": "No se pudo contactar al servicio de IA.",
+                        "error": str(e),
+                    },
+                    status=502,
+                )
 
         if r.status_code != 200:
-            return Response({"detail": "Error del servicio de IA", "raw": r.text}, status=502)
+            return Response(
+                {"detail": "Error del servicio de IA", "raw": r.text}, status=502
+            )
 
-        data = r.json()  # {label, confidence, version}
-        mv, _ = ModelVersion.objects.get_or_create(name=data.get("version", "unknown"))
+        data = r.json()
+        mv, _ = ModelVersion.objects.get_or_create(
+            name=data.get("version", "unknown")
+        )
 
         inf = Inference.objects.create(
             observation=obs,
@@ -128,21 +158,28 @@ class ClassifyObservationView(APIView):
             model_version=mv,
         )
 
-        return Response({
-            "id": inf.id,
-            "predicted_label": inf.predicted_label,
-            "confidence": float(inf.confidence),
-            "is_correct": inf.is_correct,
-            "created_at": inf.created_at.isoformat(),
-        }, status=201)
+        return Response(
+            {
+                "id": inf.id,
+                "predicted_label": inf.predicted_label,
+                "confidence": float(inf.confidence),
+                "is_correct": inf.is_correct,
+                "created_at": inf.created_at.isoformat(),
+            },
+            status=201,
+        )
+
 
 class ValidateInferenceView(APIView):
-    """POST /api/inferences/<id>/validate/ -> guarda feedback del usuario."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, inference_id: int):
         try:
-            payload = request.data if isinstance(request.data, dict) else json.loads(request.body.decode("utf-8"))
+            payload = (
+                request.data
+                if isinstance(request.data, dict)
+                else json.loads(request.body.decode("utf-8"))
+            )
         except Exception:
             return Response({"detail": "JSON inválido"}, status=400)
 
@@ -150,18 +187,17 @@ class ValidateInferenceView(APIView):
         if is_correct is None:
             return Response({"detail": "Falta 'is_correct'."}, status=400)
 
-        inf = get_object_or_404(Inference, pk=inference_id, observation__user=request.user)
+        inf = get_object_or_404(
+            Inference, pk=inference_id, observation__user=request.user
+        )
         inf.is_correct = bool(is_correct)
         inf.save()
         return Response({"ok": True})
 
+
 class PredictPreviewView(APIView):
-    """
-    POST /api/predict_preview/
-    multipart/form-data con 'image' → llama a Flask y devuelve {label, confidence, version}.
-    """
-    permission_classes = [permissions.AllowAny]  # o IsAuthenticated si preferís
-    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+    permission_classes = [permissions.AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
         if "image" not in request.FILES:
@@ -174,79 +210,105 @@ class PredictPreviewView(APIView):
         try:
             r = requests.post(url, files=files, timeout=30)
         except requests.RequestException as e:
-            return Response({"detail": "No se pudo contactar al servicio de IA.", "error": str(e)}, status=502)
+            return Response(
+                {
+                    "detail": "No se pudo contactar al servicio de IA.",
+                    "error": str(e),
+                },
+                status=502,
+            )
 
         if r.status_code != 200:
-            return Response({"detail": "Error del servicio de IA", "raw": r.text}, status=502)
+            return Response(
+                {"detail": "Error del servicio de IA", "raw": r.text}, status=502
+            )
 
         return Response(r.json(), status=200)
 
+
 class IsOwner(permissions.BasePermission):
-    """Permite operar sobre un objeto sólo si pertenece al usuario autenticado."""
     def has_object_permission(self, request, view, obj) -> bool:
-        return request.user.is_authenticated and getattr(obj, "user_id", None) == request.user.id
+        return request.user.is_authenticated and getattr(
+            obj, "user_id", None
+        ) == request.user.id
 
-
-# --- utilidades de imagen -----------------------------------------------------
 
 def _needs_convert(uploaded):
     ct = (getattr(uploaded, "content_type", "") or "").lower()
     name = (getattr(uploaded, "name", "") or "").lower()
-    return not (ct == "image/jpeg" or name.endswith(".jpg") or name.endswith(".jpeg"))
+    return not (
+        ct == "image/jpeg" or name.endswith(".jpg") or name.endswith(".jpeg")
+    )
+
 
 def _as_jpeg(uploaded):
     img = Image.open(uploaded)
-    if img.mode != "RGB": img = img.convert("RGB")
-    buf = BytesIO(); img.save(buf, format="JPEG", quality=90); buf.seek(0)
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=90)
+    buf.seek(0)
     base, _ = os.path.splitext(getattr(uploaded, "name", "image"))
-    return InMemoryUploadedFile(buf, "photo", base + ".jpg", "image/jpeg", buf.getbuffer().nbytes, None)
+    return InMemoryUploadedFile(
+        buf,
+        "photo",
+        base + ".jpg",
+        "image/jpeg",
+        buf.getbuffer().nbytes,
+        None,
+    )
 
-
-# --- ViewSet ------------------------------------------------------------------
 
 class ObservationViewSet(viewsets.ModelViewSet):
-    """
-    CRUD de Observations del usuario.
-    - Filtro `?search=` por place_text y predicted_label (split por términos).
-    - Orden `?ordering=` admite: predicted_label/-predicted_label, date/-date, created_at/-created_at, id/-id.
-    - En create/update convierte imágenes no-JPEG a JPEG.
-    """
     serializer_class = ObservationSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self) -> QuerySet[Observation]:
-        qs = (
-            Observation.objects
-            .filter(user=self.request.user)
-            .select_related("inference")
+        qs = Observation.objects.filter(user=self.request.user).select_related(
+            "inference"
         )
 
-        # --- SEARCH ---
         q = (self.request.query_params.get("search") or "").strip()
         if q:
             for term in q.split():
                 qs = qs.filter(
-                    Q(place_text__icontains=term) |
-                    Q(inference__predicted_label__icontains=term)
+                    Q(place_text__icontains=term)
+                    | Q(inference__predicted_label__icontains=term)
                 )
 
-        # --- ORDERING ---
         order = (self.request.query_params.get("ordering") or "").strip()
         if order in ("predicted_label", "-predicted_label"):
             qs = qs.annotate(
-                _pred=Lower(Coalesce("inference__predicted_label", Value(""), output_field=CharField()))
+                _pred=Lower(
+                    Coalesce(
+                        "inference__predicted_label",
+                        Value(""),
+                        output_field=CharField(),
+                    )
+                )
             )
-            qs = qs.order_by("_pred", "-date") if order == "predicted_label" else qs.order_by("-_pred", "-date")
+            if order == "predicted_label":
+                qs = qs.order_by("_pred", "-date")
+            else:
+                qs = qs.order_by("-_pred", "-date")
         else:
-            allowed = {"created_at", "-created_at", "date", "-date", "id", "-id"}
-            qs = qs.order_by(order) if order in allowed else qs.order_by("-created_at")
+            allowed = {
+                "created_at",
+                "-created_at",
+                "date",
+                "-date",
+                "id",
+                "-id",
+            }
+            qs = qs.order_by(order) if order in allowed else qs.order_by(
+                "-created_at"
+            )
 
         return qs
 
     def get_permissions(self):
         perms = super().get_permissions()
-        # En operaciones por objeto reforzamos owner
         if self.action in ["retrieve", "update", "partial_update", "destroy"]:
             perms.append(IsOwner())
         return perms
@@ -260,12 +322,12 @@ class ObservationViewSet(viewsets.ModelViewSet):
         uploaded = self.request.FILES.get("photo")
         if not uploaded:
             from rest_framework.exceptions import ValidationError
+
             raise ValidationError({"photo": "La foto es obligatoria."})
 
         photo_arg = _as_jpeg(uploaded) if _needs_convert(uploaded) else uploaded
         obs = serializer.save(user=self.request.user, photo=photo_arg)
 
-        # Si además mandaste preview, se persiste igual:
         pl = self.request.data.get("predicted_label")
         pc = self.request.data.get("predicted_confidence")
         pv = self.request.data.get("predicted_version")
@@ -288,21 +350,11 @@ class ObservationViewSet(viewsets.ModelViewSet):
 
 
 class ObservationSummaryView(APIView):
-    """
-    GET /api/reports/observations/summary/?from=YYYY-MM-DD&to=YYYY-MM-DD
-
-    Devuelve estadísticas de observaciones del usuario:
-    - total_observations
-    - distinct_species_count
-    - species_counts (top especies)
-    - observations_by_date (serie temporal)
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         user = request.user
 
-        # --- Filtros de fecha ---
         date_from_str = request.query_params.get("from")
         date_to_str = request.query_params.get("to")
 
@@ -316,31 +368,26 @@ class ObservationSummaryView(APIView):
         if date_to:
             qs = qs.filter(date__lte=date_to)
 
-        # --- Total de observaciones ---
         total_observations = qs.count()
 
-        # --- Especies: usamos species.name si existe, si no predicted_label ---
-        # Solo observaciones con inferencia
         qs_inf = qs.filter(inference__isnull=False).select_related(
             "inference__species"
         )
 
-        # Anotamos una etiqueta "label" = species.name COALESCE predicted_label
-        from django.db.models import Value, CharField
-        from django.db.models.functions import Coalesce
-
-        qs_inf = qs_inf.annotate(
-            label=Coalesce(
-                "inference__species__name",
-                "inference__predicted_label",
-                output_field=CharField(),
+        qs_inf = (
+            qs_inf.annotate(
+                label=Coalesce(
+                    "inference__species__name",
+                    "inference__predicted_label",
+                    output_field=CharField(),
+                )
             )
-        ).exclude(label__isnull=True).exclude(label__exact="")
+            .exclude(label__isnull=True)
+            .exclude(label__exact="")
+        )
 
-        # distinct species
         distinct_species_count = qs_inf.values("label").distinct().count()
 
-        # conteo por especie (top)
         species_counts_qs = (
             qs_inf.values("label")
             .annotate(count=Count("id"))
@@ -352,11 +399,8 @@ class ObservationSummaryView(APIView):
             for row in species_counts_qs
         ]
 
-        # --- Serie temporal por fecha ---
         dates_qs = (
-            qs.values("date")
-            .annotate(count=Count("id"))
-            .order_by("date")
+            qs.values("date").annotate(count=Count("id")).order_by("date")
         )
 
         observations_by_date = [
@@ -376,15 +420,9 @@ class ObservationSummaryView(APIView):
                 "observations_by_date": observations_by_date,
             }
         )
-    
+
 
 class ObservationExportCsvView(APIView):
-    """
-    GET /api/reports/observations/export/?from=YYYY-MM-DD&to=YYYY-MM-DD
-
-    Exporta las observaciones del usuario en CSV con columnas:
-    id, date, latitude, longitude, place_text, species_label, confidence, model_version, created_at
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -396,9 +434,8 @@ class ObservationExportCsvView(APIView):
         date_from = parse_date(date_from_str) if date_from_str else None
         date_to = parse_date(date_to_str) if date_to_str else None
 
-        qs = (
-            Observation.objects.filter(user=user)
-            .select_related("inference__species", "inference__model_version")
+        qs = Observation.objects.filter(user=user).select_related(
+            "inference__species", "inference__model_version"
         )
 
         if date_from:
@@ -406,13 +443,11 @@ class ObservationExportCsvView(APIView):
         if date_to:
             qs = qs.filter(date__lte=date_to)
 
-        # Preparamos respuesta HTTP como CSV
         response = HttpResponse(content_type="text/csv")
         filename = "observations_export.csv"
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
         writer = csv.writer(response)
-        # Cabeceras
         writer.writerow(
             [
                 "id",
@@ -434,7 +469,9 @@ class ObservationExportCsvView(APIView):
                     inf.species.name if inf.species else inf.predicted_label
                 )
                 confidence = inf.confidence
-                model_version = inf.model_version.name if inf.model_version else ""
+                model_version = (
+                    inf.model_version.name if inf.model_version else ""
+                )
             else:
                 species_label = ""
                 confidence = ""
@@ -455,6 +492,7 @@ class ObservationExportCsvView(APIView):
             )
 
         return response
+
 
 class ObservationExportPdfView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -478,10 +516,6 @@ class ObservationExportPdfView(APIView):
 
         total_observations = qs.count()
 
-        # --- especies (igual que antes) ---
-        from django.db.models import Value, CharField
-        from django.db.models.functions import Coalesce
-
         qs_inf = (
             qs.filter(inference__isnull=False)
             .annotate(
@@ -504,9 +538,10 @@ class ObservationExportPdfView(APIView):
         )
         species_counts = list(species_counts_qs)
 
-        # --- armamos PDF ---
         response = HttpResponse(content_type="application/pdf")
-        response["Content-Disposition"] = 'attachment; filename="observations_report.pdf"'
+        response["Content-Disposition"] = (
+            'attachment; filename="observations_report.pdf"'
+        )
 
         p = canvas.Canvas(response, pagesize=A4)
         width, height = A4
@@ -528,18 +563,22 @@ class ObservationExportPdfView(APIView):
         p.drawString(50, y, f"Usuario: {user.username}")
         y -= 30
 
-        # --- resumen general ---
         p.setFont("Helvetica-Bold", 12)
         p.drawString(50, y, "Resumen general")
         y -= 20
 
         p.setFont("Helvetica", 10)
-        p.drawString(60, y, f"Total de observaciones: {total_observations}")
+        p.drawString(
+            60, y, f"Total de observaciones: {total_observations}"
+        )
         y -= 15
-        p.drawString(60, y, f"Especies distintas observadas: {distinct_species_count}")
+        p.drawString(
+            60,
+            y,
+            f"Especies distintas observadas: {distinct_species_count}",
+        )
         y -= 30
 
-        # --- especies (conteo) ---
         p.setFont("Helvetica-Bold", 12)
         p.drawString(50, y, "Especies (conteo)")
         y -= 18
@@ -567,7 +606,6 @@ class ObservationExportPdfView(APIView):
                 p.drawRightString(width - 60, y, str(count))
                 y -= 14
 
-        # --- detalle de observaciones ---
         y -= 30
         p.setFont("Helvetica-Bold", 12)
         p.drawString(50, y, "Detalle de observaciones")
@@ -586,11 +624,12 @@ class ObservationExportPdfView(APIView):
                     p.showPage()
                     y = height - 50
                     p.setFont("Helvetica-Bold", 12)
-                    p.drawString(50, y, "Detalle de observaciones (cont.)")
+                    p.drawString(
+                        50, y, "Detalle de observaciones (cont.)"
+                    )
                     y -= 18
                     p.setFont("Helvetica", 10)
 
-                # una observación
                 p.drawString(50, y, f"Fecha: {obs.date.isoformat()}")
                 y -= 12
                 p.drawString(50, y, f"Lugar: {obs.place_text or '-'}")
@@ -604,7 +643,11 @@ class ObservationExportPdfView(APIView):
 
                 inf = getattr(obs, "inference", None)
                 if inf:
-                    species_label = inf.species.name if inf.species else inf.predicted_label
+                    species_label = (
+                        inf.species.name
+                        if inf.species
+                        else inf.predicted_label
+                    )
                     p.drawString(
                         50,
                         y,
@@ -612,7 +655,9 @@ class ObservationExportPdfView(APIView):
                     )
                     y -= 12
                     if inf.model_version:
-                        p.drawString(50, y, f"Modelo: {inf.model_version.name}")
+                        p.drawString(
+                            50, y, f"Modelo: {inf.model_version.name}"
+                        )
                         y -= 12
                 else:
                     p.drawString(
@@ -622,9 +667,8 @@ class ObservationExportPdfView(APIView):
                     )
                     y -= 12
 
-                y -= 8  # espacio entre observaciones
+                y -= 8
 
         p.showPage()
         p.save()
         return response
-

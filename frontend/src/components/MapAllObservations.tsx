@@ -41,7 +41,6 @@ export default function MapAllObservations({ points, activeId, onSelect }: Props
     onSelectRef.current = onSelect;
   }, [onSelect]);
 
-  // montar mapa
   useEffect(() => {
     if (!divRef.current || mapRef.current) return;
     const map = L.map(divRef.current, { zoomControl: true, preferCanvas: true });
@@ -68,7 +67,6 @@ export default function MapAllObservations({ points, activeId, onSelect }: Props
     };
   }, []);
 
-  // dibujar marcadores cuando cambian los puntos
   useEffect(() => {
     const map = mapRef.current;
     const layer = layerRef.current;
@@ -106,18 +104,16 @@ export default function MapAllObservations({ points, activeId, onSelect }: Props
     } else if (points.length > 1) {
       map.fitBounds(bounds.pad(0.15), { maxZoom: 15 });
     } else {
-      map.setView([-24.7829, -65.4232], 12); // Salta
+      map.setView([-24.7829, -65.4232], 12);
     }
 
-    // reabrir el popup si ya hay uno activo
     if (activeId && markerIndex.current[activeId]) {
       const m = markerIndex.current[activeId];
       m.openPopup();
       m.setZIndexOffset(1000);
     }
-  }, [points, activeId]); // sin onSelect
+  }, [points, activeId]);
 
-  // resaltar/centrar activo
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -125,7 +121,6 @@ export default function MapAllObservations({ points, activeId, onSelect }: Props
     const all = Object.values(markerIndex.current);
     if (all.length === 0) return;
 
-    // reset
     all.forEach((mk) => {
       mk.setOpacity(1);
       mk.setZIndexOffset(0);

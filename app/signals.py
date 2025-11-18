@@ -1,4 +1,3 @@
-# app/signals.py
 from io import BytesIO
 
 from django.db.models.signals import post_save
@@ -15,10 +14,6 @@ from .models import Inference
 
 @receiver(post_save, sender=Inference)
 def send_inference_email(sender, instance: Inference, created: bool, **kwargs):
-    """
-    Cuando se crea una Inference, enviar un email al dueño de la observación
-    con un PDF adjunto que incluye datos + foto de la observación.
-    """
     if not created:
         return
 
@@ -27,20 +22,15 @@ def send_inference_email(sender, instance: Inference, created: bool, **kwargs):
     if not user or not user.email:
         return
 
-    # =======================
-    # 1) Generar PDF en memoria
-    # =======================
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
     y = height - 50
 
-    # Título
     p.setFont("Helvetica-Bold", 16)
     p.drawString(50, y, "Nueva inferencia — BeetleApp")
     y -= 30
 
-    # Datos básicos
     p.setFont("Helvetica", 10)
     p.drawString(50, y, f"Usuario: {user.username}")
     y -= 15
@@ -51,7 +41,6 @@ def send_inference_email(sender, instance: Inference, created: bool, **kwargs):
     p.drawString(50, y, f"Coordenadas: ({obs.latitude}, {obs.longitude})")
     y -= 25
 
-    # Inferencia
     p.setFont("Helvetica-Bold", 12)
     p.drawString(50, y, "Inferencia generada por IA")
     y -= 18
@@ -67,33 +56,24 @@ def send_inference_email(sender, instance: Inference, created: bool, **kwargs):
 
     y -= 20
 
-    # =======================
-    # 2) Insertar la foto (si existe)
-    # =======================
     if obs.photo:
         try:
-            # Leemos la imagen desde el path del ImageField
             image_path = obs.photo.path
             img = ImageReader(image_path)
             img_width, img_height = img.getSize()
 
-            # Definimos un área máxima para la foto
-            max_width = width - 100  # márgenes izquierda/derecha
-            max_height = 250         # alto máximo para la foto
+            max_width = width - 100
+            max_height = 250
 
-            # Calculamos escala manteniendo proporción
             scale = min(max_width / img_width, max_height / img_height, 1.0)
             draw_w = img_width * scale
             draw_h = img_height * scale
 
-            # Si no hay lugar suficiente en la página actual, saltamos de página
             if y - draw_h < 50:
                 p.showPage()
                 y = height - 50
 
-            # Posición de la imagen (anclada abajo a la izquierda)
             x = 50
-            # y de la esquina inferior de la imagen
             img_y = y - draw_h
 
             p.drawImage(
@@ -106,20 +86,15 @@ def send_inference_email(sender, instance: Inference, created: bool, **kwargs):
                 anchor="sw",
             )
 
-            y = img_y - 20  # dejamos un poco de espacio debajo
+            y = img_y - 20
         except Exception:
-            # Si hay cualquier problema con la imagen, seguimos sin romper el envío
             pass
 
-    # Cerramos PDF
     p.showPage()
     p.save()
     pdf_bytes = buffer.getvalue()
     buffer.close()
 
-    # =======================
-    # 3) Enviar mail con PDF adjunto
-    # =======================
     subject = "Nueva inferencia en tu observación — BeetleApp"
     detail_url = f"{getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')}/observations"
     body = (

@@ -40,7 +40,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 p-4">
       <div className="w-full max-w-5xl bg-white/80 backdrop-blur-md shadow-2xl rounded-3xl overflow-hidden border-2 border-slate-200 grid md:grid-cols-2">
-        {/* Formulario */}
+
         <div className="p-10 flex flex-col justify-center">
           <div className="mb-8">
             <h2 className="text-3xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
@@ -115,7 +115,7 @@ export default function Login() {
           </form>
         </div>
 
-        {/* Imagen */}
+
         <div className="hidden md:block relative overflow-hidden">
           <div className="absolute inset-0 bg-linear-to-br from-blue-500/20 to-indigo-500/20 z-10" />
           <img src="/images/login-bg.jpg" alt="Login background" className="object-cover w-full h-full" />
