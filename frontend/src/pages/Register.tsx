@@ -19,7 +19,6 @@ export default function Register() {
     e.preventDefault();
     setErr(null);
 
-    // Validaciones locales
     if (form.password.length < 8) return setErr("La contraseña debe tener al menos 8 caracteres.");
     if (form.password !== form.confirmPassword) return setErr("Las contraseñas no coinciden.");
 
@@ -43,21 +42,26 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-5xl bg-white shadow-xl rounded-2xl overflow-hidden grid md:grid-cols-2">
-        {/* Formulario */}
-        <div className="p-8 md:p-10 flex flex-col justify-center">
-          <h2 className="text-2xl font-semibold text-neutral-900">Crear cuenta</h2>
-          <p className="text-sm text-neutral-500 mt-1 mb-6">Completá tus datos para registrarte</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex items-center justify-center px-4">
+      <div className="w-full max-w-5xl bg-white/80 backdrop-blur-md shadow-2xl rounded-3xl overflow-hidden border-2 border-slate-200 grid md:grid-cols-2">
+        <div className="p-10 flex flex-col justify-center">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+              Crear cuenta
+            </h2>
+            <p className="text-sm text-slate-600">Completá tus datos para registrarte</p>
+          </div>
 
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="block text-sm text-neutral-700 mb-1">Usuario</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Usuario</label>
               <input
                 name="username"
                 value={form.username}
                 onChange={onChange}
-                className="w-full border border-neutral-300 rounded-xl px-3 py-2 outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-400"
+                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 outline-none 
+                         focus:ring-4 focus:ring-blue-100 focus:border-blue-500 
+                         transition-all duration-300 font-medium"
                 placeholder="Usuario"
                 autoComplete="username"
                 required
@@ -65,13 +69,15 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-700 mb-1">Email</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
               <input
                 name="email"
                 type="email"
                 value={form.email}
                 onChange={onChange}
-                className="w-full border border-neutral-300 rounded-xl px-3 py-2 outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-400"
+                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 outline-none 
+                         focus:ring-4 focus:ring-blue-100 focus:border-blue-500 
+                         transition-all duration-300 font-medium"
                 placeholder="usuario@correo.com"
                 autoComplete="email"
                 required
@@ -79,13 +85,15 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-700 mb-1">Contraseña</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Contraseña</label>
               <input
                 name="password"
                 type="password"
                 value={form.password}
                 onChange={onChange}
-                className="w-full border border-neutral-300 rounded-xl px-3 py-2 outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-400"
+                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 outline-none 
+                         focus:ring-4 focus:ring-blue-100 focus:border-blue-500 
+                         transition-all duration-300 font-medium"
                 placeholder="Mínimo 8 caracteres"
                 autoComplete="new-password"
                 minLength={8}
@@ -94,42 +102,52 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-sm text-neutral-700 mb-1">Repetir contraseña</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Repetir contraseña</label>
               <input
                 name="confirmPassword"
                 type="password"
                 value={form.confirmPassword}
                 onChange={onChange}
-                className="w-full border border-neutral-300 rounded-xl px-3 py-2 outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-400"
+                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 outline-none 
+                         focus:ring-4 focus:ring-blue-100 focus:border-blue-500 
+                         transition-all duration-300 font-medium"
                 placeholder="Repetí tu contraseña"
                 autoComplete="new-password"
                 required
               />
             </div>
 
-            {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
+            {error && <div className="p-4 rounded-xl bg-red-50 border-2 border-red-200 text-red-700 text-sm font-medium">{error}</div>}
 
             <button
               disabled={loading}
-              className="w-full bg-blue-600 text-white rounded-xl px-3 py-2 font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl 
+                       px-4 py-3 font-bold hover:from-blue-600 hover:to-indigo-600 
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       shadow-lg hover:shadow-xl transition-all duration-300"
             >
               {loading ? "Creando…" : "Registrarse"}
             </button>
 
-            <div className="flex items-center justify-between text-sm pt-1">
-              <Link to="/login" className="text-neutral-700 hover:text-neutral-900 hover:underline">
+            <div className="flex items-center justify-between text-sm pt-3 border-t-2 border-slate-100">
+              <Link to="/login" className="text-slate-700 font-semibold hover:text-blue-600 transition-colors">
                 Ya tengo cuenta
               </Link>
-              <Link to="/forgot" className="text-blue-600 hover:text-blue-700 hover:underline">
+              <Link to="/forgot" className="text-blue-600 font-semibold hover:text-indigo-600 transition-colors">
                 Olvidé mi contraseña
               </Link>
             </div>
           </form>
         </div>
 
-        {/* Imagen */}
-        <div className="hidden md:block bg-neutral-200">
+        <div className="hidden md:block relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 z-10" />
           <img src="/images/login-bg.jpg" alt="Register background" className="object-cover w-full h-full" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent z-20" />
+          <div className="absolute bottom-8 left-8 right-8 z-30 text-white">
+            <h3 className="text-2xl font-bold mb-2">BeetleApp</h3>
+            <p className="text-sm text-white/90">Plataforma de identificación de escarabajos mediante Deep Learning</p>
+          </div>
         </div>
       </div>
     </div>

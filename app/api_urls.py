@@ -6,6 +6,7 @@ from .api import ObservationViewSet
 from .api import (
     RegisterView, PasswordResetRequestView, PasswordResetConfirmView, MeView,
     ClassifyObservationView, ValidateInferenceView, PredictPreviewView,
+    ObservationSummaryView, ObservationExportCsvView, ObservationExportPdfView,
 )
 
 router = DefaultRouter()
@@ -26,4 +27,10 @@ urlpatterns = [
     path("observations/<int:observation_id>/classify/", ClassifyObservationView.as_view(), name="classify_observation"),
     path("inferences/<int:inference_id>/validate/", ValidateInferenceView.as_view(), name="validate_inference"),
     path("predict_preview/", PredictPreviewView.as_view(), name="predict_preview"),
+
+    #Reportes
+    path("reports/observations/summary/",ObservationSummaryView.as_view(),name="observations_summary",),
+    path("reports/observations/export/",ObservationExportCsvView.as_view(),name="observations_export_csv",),
+    path("reports/observations/export_pdf/",ObservationExportPdfView.as_view(),name="observations_export_pdf",
+    ),
 ]

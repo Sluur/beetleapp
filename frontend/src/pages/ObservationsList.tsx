@@ -31,7 +31,6 @@ export default function ObservationsPage() {
   const [detailId, setDetailId] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  // medir altura real de la toolbar para el offset de los headers sticky
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const [toolbarH, setToolbarH] = useState(0);
 
@@ -128,29 +127,28 @@ export default function ObservationsPage() {
   }, [items, showGrouped]);
 
   return (
-    <div className="h-[calc(100vh-64px)] overflow-hidden bg-neutral-50">
+    <div className="h-[calc(100vh-64px)] overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
       <div className="h-full grid grid-cols-1 md:grid-cols-2 gap-0 min-h-0">
         {/* MAPA IZQUIERDA */}
         <div className="h-full p-4 min-h-0">
-          <div className="h-full rounded-2xl overflow-hidden border border-neutral-200 shadow-sm bg-white">
+          <div className="h-full rounded-3xl overflow-hidden border-2 border-slate-200 shadow-xl bg-white">
             <MapAllObservations points={points} activeId={activeId ?? undefined} onSelect={handleSelectOnMap} />
           </div>
         </div>
 
         {/* LISTA DERECHA */}
-        <div className="h-full bg-white border-l border-neutral-200 flex flex-col min-h-0">
+        <div className="h-full bg-white/80 backdrop-blur-sm border-l-2 border-slate-200 flex flex-col min-h-0">
           {/* Toolbar sticky */}
-          <div
-            ref={toolbarRef}
-            className="sticky top-0 z-20 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/70 border-b border-neutral-200"
-          >
-            <div className="px-5 py-3 flex items-center gap-3">
-              <h1 className="text-4xl font-bold tracking-tight text-blue-500 flex-1">Observaciones</h1>
+          <div ref={toolbarRef} className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b-2 border-slate-200">
+            <div className="px-6 py-4 flex items-center gap-4">
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent flex-1">
+                Observaciones
+              </h1>
 
               {/* Buscador */}
               <div className="relative w-64">
                 <svg
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -164,7 +162,9 @@ export default function ObservationsPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Buscar por lugar…"
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-neutral-300 text-sm outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-400 placeholder:text-neutral-400"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border-2 border-slate-200 text-sm outline-none 
+                           focus:border-blue-500 focus:ring-4 focus:ring-blue-100 
+                           placeholder:text-slate-400 bg-white"
                 />
               </div>
 
@@ -172,7 +172,8 @@ export default function ObservationsPage() {
               <select
                 value={ordering}
                 onChange={(e) => setOrdering(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-neutral-300 text-sm outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-400"
+                className="px-4 py-2.5 rounded-xl border-2 border-slate-200 text-sm outline-none 
+                         focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 bg-white font-medium text-slate-700"
                 title="Ordenar"
               >
                 <option value="-created_at">Más recientes</option>
@@ -186,47 +187,47 @@ export default function ObservationsPage() {
           </div>
 
           {/* Contenido scrolleable */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0" style={{ ["--toolbar-h" as any]: `${toolbarH}px` }}>
-            {loading && <div className="text-sm text-neutral-500 p-4">Cargando…</div>}
-            {error && <div className="text-red-600 p-4">{error}</div>}
+          <div className="flex-1 overflow-y-auto px-5 py-5 min-h-0" style={{ ["--toolbar-h" as any]: `${toolbarH}px` }}>
+            {loading && (
+              <div className="flex items-center justify-center p-12">
+                <div className="text-sm text-slate-500 font-medium">Cargando observaciones...</div>
+              </div>
+            )}
+
+            {error && <div className="p-4 rounded-2xl bg-red-50 border-2 border-red-200 text-red-700 font-medium">{error}</div>}
 
             {!loading && !error && items.length === 0 && (
-              <div className="p-10 text-center text-neutral-500 rounded-xl border border-dashed">
-                Sin resultados{" "}
-                {debouncedQuery ? (
-                  <>
-                    para “<b>{debouncedQuery}</b>”
-                  </>
-                ) : (
-                  ""
-                )}
-                .
+              <div className="p-12 text-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/50">
+                <div className="text-slate-400 text-4xl mb-3">🔍</div>
+                <div className="text-slate-600 font-medium">
+                  Sin resultados
+                  {debouncedQuery && <span className="text-slate-900"> para "{debouncedQuery}"</span>}
+                </div>
               </div>
             )}
 
             {/* Render: agrupado por tipo o lista plana */}
             {showGrouped ? (
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {groups.map((g, i) => (
                   <section key={g.label}>
-                    {/* separador superior suave */}
-                    <div className={i === 0 ? "hidden" : "block"}>
-                      <hr className="border-neutral-200" />
-                    </div>
+                    {i > 0 && <div className="h-px bg-linear-to-r from-transparent via-slate-200 to-transparent" />}
 
                     {/* header de grupo */}
                     <div
-                      className=" z-10 bg-white/90 backdrop-blur supports-backdrop-filter:bg-white/70
-                                 px-2 py-2 -mx-2 border-b border-neutral-200"
+                      className="z-10 bg-white/95 backdrop-blur-md px-3 py-3 -mx-3 rounded-xl border-2 border-slate-200 shadow-sm"
+                      style={{ top: `${toolbarH + 8}px` }}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-neutral-700">{g.label}</span>
-                        <span className="text-[11px] px-2 py-0.5 rounded-full border border-neutral-300 text-neutral-600">{g.count}</span>
+                        <span className="text-sm font-bold text-slate-900">{g.label}</span>
+                        <span className="px-3 py-1 rounded-full bg-linear-to-r from-blue-500 to-indigo-500 text-white text-xs font-semibold">
+                          {g.count}
+                        </span>
                       </div>
                     </div>
 
                     {/* grid de cards */}
-                    <div className="mt-3 grid gap-4 xl:grid-cols-2">
+                    <div className="mt-4 grid gap-4 xl:grid-cols-2">
                       {g.list.map((o) => {
                         const lat = typeof o.latitude === "string" ? parseFloat(o.latitude) : o.latitude;
                         const lon = typeof o.longitude === "string" ? parseFloat(o.longitude) : o.longitude;
@@ -284,7 +285,7 @@ export default function ObservationsPage() {
               </div>
             )}
 
-            <div className="h-6" />
+            <div className="h-8" />
           </div>
         </div>
       </div>

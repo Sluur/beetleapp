@@ -7,14 +7,13 @@ declare module "axios" {
 }
 
 // Usamos VITE_API_BASE, y acá le agregamos "/api"
-const RAW_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://127.0.0.1:8000";
-const API_BASE = RAW_BASE.replace(/\/+$/, "") + "/api";
+export const RAW_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "http://127.0.0.1:8000";
+export const API_BASE = RAW_BASE.replace(/\/+$/, "") + "/api";
 
 export const api = axios.create({
   baseURL: API_BASE,
   timeout: 30000,
 });
-
 export async function registerUser(data: { username: string; email: string; password: string }) {
   const res = await api.post("auth/register/", data);
   return res.data;

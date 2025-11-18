@@ -15,6 +15,14 @@ from django.conf import settings
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 
+from django.db.models import Count
+from django.utils.dateparse import parse_date
+from django.http import HttpResponse
+import csv
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+
 from rest_framework import permissions, parsers
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -277,3 +285,346 @@ class ObservationViewSet(viewsets.ModelViewSet):
             serializer.save(photo=photo_arg)
         else:
             serializer.save()
+
+
+class ObservationSummaryView(APIView):
+    """
+    GET /api/reports/observations/summary/?from=YYYY-MM-DD&to=YYYY-MM-DD
+
+    Devuelve estadísticas de observaciones del usuario:
+    - total_observations
+    - distinct_species_count
+    - species_counts (top especies)
+    - observations_by_date (serie temporal)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # --- Filtros de fecha ---
+        date_from_str = request.query_params.get("from")
+        date_to_str = request.query_params.get("to")
+
+        date_from = parse_date(date_from_str) if date_from_str else None
+        date_to = parse_date(date_to_str) if date_to_str else None
+
+        qs = Observation.objects.filter(user=user).select_related("inference")
+
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+
+        # --- Total de observaciones ---
+        total_observations = qs.count()
+
+        # --- Especies: usamos species.name si existe, si no predicted_label ---
+        # Solo observaciones con inferencia
+        qs_inf = qs.filter(inference__isnull=False).select_related(
+            "inference__species"
+        )
+
+        # Anotamos una etiqueta "label" = species.name COALESCE predicted_label
+        from django.db.models import Value, CharField
+        from django.db.models.functions import Coalesce
+
+        qs_inf = qs_inf.annotate(
+            label=Coalesce(
+                "inference__species__name",
+                "inference__predicted_label",
+                output_field=CharField(),
+            )
+        ).exclude(label__isnull=True).exclude(label__exact="")
+
+        # distinct species
+        distinct_species_count = qs_inf.values("label").distinct().count()
+
+        # conteo por especie (top)
+        species_counts_qs = (
+            qs_inf.values("label")
+            .annotate(count=Count("id"))
+            .order_by("-count", "label")
+        )
+
+        species_counts = [
+            {"label": row["label"], "count": row["count"]}
+            for row in species_counts_qs
+        ]
+
+        # --- Serie temporal por fecha ---
+        dates_qs = (
+            qs.values("date")
+            .annotate(count=Count("id"))
+            .order_by("date")
+        )
+
+        observations_by_date = [
+            {"date": row["date"].isoformat(), "count": row["count"]}
+            for row in dates_qs
+        ]
+
+        return Response(
+            {
+                "filters": {
+                    "from": date_from.isoformat() if date_from else None,
+                    "to": date_to.isoformat() if date_to else None,
+                },
+                "total_observations": total_observations,
+                "distinct_species_count": distinct_species_count,
+                "species_counts": species_counts,
+                "observations_by_date": observations_by_date,
+            }
+        )
+    
+
+class ObservationExportCsvView(APIView):
+    """
+    GET /api/reports/observations/export/?from=YYYY-MM-DD&to=YYYY-MM-DD
+
+    Exporta las observaciones del usuario en CSV con columnas:
+    id, date, latitude, longitude, place_text, species_label, confidence, model_version, created_at
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        date_from_str = request.query_params.get("from")
+        date_to_str = request.query_params.get("to")
+
+        date_from = parse_date(date_from_str) if date_from_str else None
+        date_to = parse_date(date_to_str) if date_to_str else None
+
+        qs = (
+            Observation.objects.filter(user=user)
+            .select_related("inference__species", "inference__model_version")
+        )
+
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+
+        # Preparamos respuesta HTTP como CSV
+        response = HttpResponse(content_type="text/csv")
+        filename = "observations_export.csv"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+        writer = csv.writer(response)
+        # Cabeceras
+        writer.writerow(
+            [
+                "id",
+                "date",
+                "latitude",
+                "longitude",
+                "place_text",
+                "species_label",
+                "confidence",
+                "model_version",
+                "created_at",
+            ]
+        )
+
+        for obs in qs:
+            inf = getattr(obs, "inference", None)
+            if inf:
+                species_label = (
+                    inf.species.name if inf.species else inf.predicted_label
+                )
+                confidence = inf.confidence
+                model_version = inf.model_version.name if inf.model_version else ""
+            else:
+                species_label = ""
+                confidence = ""
+                model_version = ""
+
+            writer.writerow(
+                [
+                    obs.id,
+                    obs.date.isoformat(),
+                    str(obs.latitude),
+                    str(obs.longitude),
+                    obs.place_text,
+                    species_label,
+                    confidence,
+                    model_version,
+                    obs.created_at.isoformat() if obs.created_at else "",
+                ]
+            )
+
+        return response
+
+class ObservationExportPdfView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        date_from_str = request.query_params.get("from")
+        date_to_str = request.query_params.get("to")
+
+        date_from = parse_date(date_from_str) if date_from_str else None
+        date_to = parse_date(date_to_str) if date_to_str else None
+
+        qs = Observation.objects.filter(user=user).select_related(
+            "inference__species", "inference__model_version"
+        )
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+
+        total_observations = qs.count()
+
+        # --- especies (igual que antes) ---
+        from django.db.models import Value, CharField
+        from django.db.models.functions import Coalesce
+
+        qs_inf = (
+            qs.filter(inference__isnull=False)
+            .annotate(
+                label=Coalesce(
+                    "inference__species__name",
+                    "inference__predicted_label",
+                    output_field=CharField(),
+                )
+            )
+            .exclude(label__isnull=True)
+            .exclude(label__exact="")
+        )
+
+        distinct_species_count = qs_inf.values("label").distinct().count()
+
+        species_counts_qs = (
+            qs_inf.values("label")
+            .annotate(count=Count("id"))
+            .order_by("-count", "label")
+        )
+        species_counts = list(species_counts_qs)
+
+        # --- armamos PDF ---
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = 'attachment; filename="observations_report.pdf"'
+
+        p = canvas.Canvas(response, pagesize=A4)
+        width, height = A4
+        y = height - 50
+
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(50, y, "Informe de observaciones — BeetleApp")
+        y -= 30
+
+        p.setFont("Helvetica", 10)
+        rango_txt = "Todo el historial"
+        if date_from or date_to:
+            d1 = date_from.isoformat() if date_from else "inicio"
+            d2 = date_to.isoformat() if date_to else "hoy"
+            rango_txt = f"Rango: {d1} a {d2}"
+        p.drawString(50, y, rango_txt)
+        y -= 20
+
+        p.drawString(50, y, f"Usuario: {user.username}")
+        y -= 30
+
+        # --- resumen general ---
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y, "Resumen general")
+        y -= 20
+
+        p.setFont("Helvetica", 10)
+        p.drawString(60, y, f"Total de observaciones: {total_observations}")
+        y -= 15
+        p.drawString(60, y, f"Especies distintas observadas: {distinct_species_count}")
+        y -= 30
+
+        # --- especies (conteo) ---
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y, "Especies (conteo)")
+        y -= 18
+
+        p.setFont("Helvetica", 10)
+        if not species_counts:
+            p.drawString(60, y, "No hay especies en este rango.")
+            y -= 15
+        else:
+            p.drawString(60, y, "Especie")
+            p.drawString(320, y, "Observaciones")
+            y -= 15
+            p.line(60, y, width - 60, y)
+            y -= 10
+
+            for row in species_counts:
+                label = row["label"]
+                count = row["count"]
+                if y < 80:
+                    p.showPage()
+                    y = height - 50
+                    p.setFont("Helvetica", 10)
+
+                p.drawString(60, y, str(label))
+                p.drawRightString(width - 60, y, str(count))
+                y -= 14
+
+        # --- detalle de observaciones ---
+        y -= 30
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y, "Detalle de observaciones")
+        y -= 18
+
+        p.setFont("Helvetica", 10)
+
+        obs_list = qs.order_by("date", "id")
+
+        if not obs_list:
+            p.drawString(60, y, "No hay observaciones en este rango.")
+            y -= 15
+        else:
+            for obs in obs_list:
+                if y < 80:
+                    p.showPage()
+                    y = height - 50
+                    p.setFont("Helvetica-Bold", 12)
+                    p.drawString(50, y, "Detalle de observaciones (cont.)")
+                    y -= 18
+                    p.setFont("Helvetica", 10)
+
+                # una observación
+                p.drawString(50, y, f"Fecha: {obs.date.isoformat()}")
+                y -= 12
+                p.drawString(50, y, f"Lugar: {obs.place_text or '-'}")
+                y -= 12
+                p.drawString(
+                    50,
+                    y,
+                    f"Coordenadas: ({obs.latitude}, {obs.longitude})",
+                )
+                y -= 12
+
+                inf = getattr(obs, "inference", None)
+                if inf:
+                    species_label = inf.species.name if inf.species else inf.predicted_label
+                    p.drawString(
+                        50,
+                        y,
+                        f"Especie: {species_label}  ·  Confianza: {inf.confidence:.1f}",
+                    )
+                    y -= 12
+                    if inf.model_version:
+                        p.drawString(50, y, f"Modelo: {inf.model_version.name}")
+                        y -= 12
+                else:
+                    p.drawString(
+                        50,
+                        y,
+                        "Inferencia: (sin inferencia asociada aún)",
+                    )
+                    y -= 12
+
+                y -= 8  # espacio entre observaciones
+
+        p.showPage()
+        p.save()
+        return response
+

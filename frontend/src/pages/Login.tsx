@@ -22,7 +22,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const ok = await login(username, password); // ← usa AuthContext (guarda access+refresh)
+      const ok = await login(username, password);
       if (!ok) {
         setError("Credenciales inválidas");
         return;
@@ -38,17 +38,24 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-full flex items-center justify-center bg-neutral-100 p-4">
-      <div className="w-full max-w-4xl bg-white shadow-lg rounded-2xl overflow-hidden grid md:grid-cols-2">
-        <div className="p-8 flex flex-col justify-center">
-          <h2 className="text-2xl font-semibold text-neutral-900 mb-1">Iniciar sesión</h2>
-          <p className="text-sm text-neutral-500 mb-6">Ingresa tus credenciales para continuar</p>
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 p-4">
+      <div className="w-full max-w-5xl bg-white/80 backdrop-blur-md shadow-2xl rounded-3xl overflow-hidden border-2 border-slate-200 grid md:grid-cols-2">
+        {/* Formulario */}
+        <div className="p-10 flex flex-col justify-center">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+              Iniciar sesión
+            </h2>
+            <p className="text-sm text-slate-600">Ingresa tus credenciales para continuar</p>
+          </div>
 
-          <form onSubmit={submit}>
-            <label className="block mb-3">
-              <span className="block text-sm text-neutral-700 mb-1">Usuario</span>
+          <form onSubmit={submit} className="space-y-5">
+            <label className="block">
+              <span className="block text-sm font-semibold text-slate-700 mb-2">Usuario</span>
               <input
-                className="w-full border border-neutral-300 rounded-xl px-3 py-2 outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-400"
+                className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 outline-none 
+                         focus:ring-4 focus:ring-blue-100 focus:border-blue-500 
+                         transition-all duration-300 font-medium"
                 placeholder="Usuario"
                 autoComplete="username"
                 value={username}
@@ -58,11 +65,13 @@ export default function Login() {
               />
             </label>
 
-            <label className="block mb-4">
-              <span className="block text-sm text-neutral-700 mb-1">Contraseña</span>
+            <label className="block">
+              <span className="block text-sm font-semibold text-slate-700 mb-2">Contraseña</span>
               <div className="relative">
                 <input
-                  className="w-full border border-neutral-300 rounded-xl px-3 py-2 pr-10 outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-400"
+                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 pr-20 outline-none 
+                           focus:ring-4 focus:ring-blue-100 focus:border-blue-500 
+                           transition-all duration-300 font-medium"
                   placeholder="Contraseña"
                   type={showPwd ? "text" : "password"}
                   autoComplete="current-password"
@@ -74,7 +83,8 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPwd((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 text-sm px-2 py-1 hover:text-neutral-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-semibold 
+                           px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                   tabIndex={-1}
                 >
                   {showPwd ? "Ocultar" : "Ver"}
@@ -82,28 +92,38 @@ export default function Login() {
               </div>
             </label>
 
-            {error && <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
+            {error && <div className="p-4 rounded-xl bg-red-50 border-2 border-red-200 text-red-700 text-sm font-medium">{error}</div>}
 
             <button
-              className="w-full bg-blue-600 text-white rounded-xl px-3 py-2 font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-linear-to-r from-blue-500 to-indigo-500 text-white rounded-xl 
+                       px-4 py-3 font-bold hover:from-blue-600 hover:to-indigo-600 
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       shadow-lg hover:shadow-xl transition-all duration-300"
               disabled={loading}
             >
               {loading ? "Ingresando…" : "Entrar"}
             </button>
 
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <Link to="/register" className="text-neutral-700 hover:text-neutral-900 hover:underline">
+            <div className="mt-6 flex items-center justify-between text-sm pt-2 border-t-2 border-slate-100">
+              <Link to="/register" className="text-slate-700 font-semibold hover:text-blue-600 transition-colors">
                 Registrarse
               </Link>
-              <Link to="/forgot-password" className="text-blue-600 hover:text-blue-700 hover:underline">
+              <Link to="/forgot-password" className="text-blue-600 font-semibold hover:text-indigo-600 transition-colors">
                 Olvidé mi contraseña
               </Link>
             </div>
           </form>
         </div>
 
-        <div className="hidden md:block bg-neutral-200">
+        {/* Imagen */}
+        <div className="hidden md:block relative overflow-hidden">
+          <div className="absolute inset-0 bg-linear-to-br from-blue-500/20 to-indigo-500/20 z-10" />
           <img src="/images/login-bg.jpg" alt="Login background" className="object-cover w-full h-full" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent z-20" />
+          <div className="absolute bottom-8 left-8 right-8 z-30 text-white">
+            <h3 className="text-2xl font-bold mb-2">BeetleApp</h3>
+            <p className="text-sm text-white/90">Plataforma de identificación de escarabajos mediante Deep Learning</p>
+          </div>
         </div>
       </div>
     </div>
