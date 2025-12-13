@@ -19,7 +19,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-not-for-prod")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv(
     "ALLOWED_HOSTS",
-    "127.0.0.1,localhost,192.168.0.18"
+    "127.0.0.1,localhost,192.168.0.18,192.168.199.15"
 ).split(",") if h.strip()]
 
 
