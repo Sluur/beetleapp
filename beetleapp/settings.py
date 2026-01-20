@@ -20,7 +20,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-not-for-prod")
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
 if not DEBUG:
     ALLOWED_HOSTS += [".railway.app"]
-
+    ALLOWED_HOSTS += ["beetleapp-production.up.railway.app"]
 # --- Apps ---
 INSTALLED_APPS = [
     "django.contrib.admin",
