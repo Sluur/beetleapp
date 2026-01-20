@@ -7,6 +7,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
+import dj_database_url
 
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,8 +20,19 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-not-for-prod")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv(
     "ALLOWED_HOSTS",
-    "127.0.0.1,localhost,192.168.0.18,192.168.199.15"
+    "127.0.0.1,localhost"
 ).split(",") if h.strip()]
+
+if not DEBUG:
+    ALLOWED_HOSTS += [".railway.app"]
+
+if not DEBUG:
+    CORS_ALLOWED_ORIGINS += [
+        "https://TU-DOMINIO.railway.app",
+    ]
+    CSRF_TRUSTED_ORIGINS += [
+        "https://TU-DOMINIO.railway.app",
+    ]
 
 
 # --- Apps ---
@@ -83,21 +95,34 @@ TEMPLATES = [
     },
 ]
 
-# --- Base de datos (MySQL Docker + PyMySQL) ---
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("DB_NAME", "beetleapp"),
-        "USER": os.getenv("DB_USER", "beetle"),
-        "PASSWORD": os.getenv("DB_PASS", "supersegura"),
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),  # Django corre en el host, no dentro de Docker
-        "PORT": os.getenv("DB_PORT", "3306"),
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            "sql_mode": "STRICT_TRANS_TABLES",
-        },
+# --- Base de datos  ---
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    # Producción (Railway): PostgreSQL via DATABASE_URL
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+else:
+    # Local: MySQL (Docker)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv("DB_NAME", "beetleapp"),
+            "USER": os.getenv("DB_USER", "beetle"),
+            "PASSWORD": os.getenv("DB_PASS", "supersegura"),
+            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+            "PORT": os.getenv("DB_PORT", "3306"),
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                "sql_mode": "STRICT_TRANS_TABLES",
+            },
+        }
+    }
 
 # --- Email (Papercut SMTP en Docker) ---
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
