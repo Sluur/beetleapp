@@ -48,18 +48,31 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# --- CORS / CSRF ---
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+# --- Hosts ---
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-extra = [o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
-CORS_ALLOWED_ORIGINS += extra
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+ALLOWED_HOSTS = [h.strip() for h in os.getenv(
+    "ALLOWED_HOSTS",
+    "127.0.0.1,localhost"
+).split(",") if h.strip()]
+
+# En Railway el host real cambia; esto cubre *.up.railway.app
+if not DEBUG:
+    ALLOWED_HOSTS += [".up.railway.app", ".railway.app"]
+
+# --- CORS / CSRF ---
+def _split_env(name: str, default: str = ""):
+    return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
+
+CORS_ALLOWED_ORIGINS = _split_env(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173"
+)
+
+CSRF_TRUSTED_ORIGINS = _split_env(
+    "CSRF_TRUSTED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173"
+)
 
 # En producción, agregá tus dominios públicos si los tenés
 PUBLIC_BACKEND_URL = os.getenv("PUBLIC_BACKEND_URL", "").strip()
