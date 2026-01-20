@@ -1,55 +1,50 @@
+
 """
 Django settings for beetleapp project.
-Adaptado para entorno local con Docker (MySQL + Papercut) y Honcho.
+Local: MySQL + Papercut (Docker)
+Prod (Railway): PostgreSQL via DATABASE_URL + AI service via AI_PREDICT_URL
 """
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
 from datetime import timedelta
+
+from dotenv import load_dotenv
 import dj_database_url
 
 # --- Paths ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- Cargar variables desde .env ---
-load_dotenv(BASE_DIR / ".env")
+# --- Cargar variables locales (.env) SOLO en desarrollo ---
+# En Railway, las variables se configuran en "Variables" del servicio.
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+if DEBUG:
+    load_dotenv(BASE_DIR / ".env")
 
 # --- Seguridad / Debug ---
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-not-for-prod")
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv(
-    "ALLOWED_HOSTS",
-    "127.0.0.1,localhost"
-).split(",") if h.strip()]
 
+# Hosts
+_default_hosts = "127.0.0.1,localhost"
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", _default_hosts).split(",") if h.strip()]
 if not DEBUG:
+    # permite *.railway.app sin hardcodear tu subdominio
     ALLOWED_HOSTS += [".railway.app"]
-
-if not DEBUG:
-    CORS_ALLOWED_ORIGINS += [
-        "https://TU-DOMINIO.railway.app",
-    ]
-    CSRF_TRUSTED_ORIGINS += [
-        "https://TU-DOMINIO.railway.app",
-    ]
-
 
 # --- Apps ---
 INSTALLED_APPS = [
-    # Core
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Terceros
+    # terceros
     "rest_framework",
     "django_filters",
     "drf_spectacular",
     "corsheaders",
-    # App local
+    # app local
     "app",
 ]
 
@@ -57,7 +52,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  # debe ir antes de CommonMiddleware
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -66,6 +61,7 @@ MIDDLEWARE = [
 ]
 
 # --- CORS / CSRF ---
+# Local dev (frontend Vite)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -74,6 +70,13 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
+
+# Producción: agregá tu dominio público del backend (railway)
+# Ej: https://beetleapp-production.up.railway.app
+PUBLIC_BACKEND_URL = os.getenv("PUBLIC_BACKEND_URL", "").strip()
+if not DEBUG and PUBLIC_BACKEND_URL:
+    CORS_ALLOWED_ORIGINS.append(PUBLIC_BACKEND_URL)
+    CSRF_TRUSTED_ORIGINS.append(PUBLIC_BACKEND_URL)
 
 # --- URLs / WSGI ---
 ROOT_URLCONF = "beetleapp.urls"
@@ -95,11 +98,11 @@ TEMPLATES = [
     },
 ]
 
-# --- Base de datos  ---
-DATABASE_URL = os.getenv("DATABASE_URL")
+# --- Base de datos ---
+# Railway: si linkeaste PostgreSQL, tendrás DATABASE_URL definido.
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
 if DATABASE_URL:
-    # Producción (Railway): PostgreSQL via DATABASE_URL
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
@@ -124,7 +127,7 @@ else:
         }
     }
 
-# --- Email (Papercut SMTP en Docker) ---
+# --- Email ---
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "2525"))
@@ -165,7 +168,7 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 }
 
-# --- Auth redirects (si usás vistas con login/logout) ---
+# --- Auth redirects ---
 LOGIN_URL = "/accounts/login"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
@@ -183,14 +186,15 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --- Config IA (Flask local) ---
-AI_PREDICT_URL = "http://127.0.0.1:5001/predict"
+# --- AI Service ---
+# Local default: http://127.0.0.1:5001/predict
+# Producción: setear en Railway (Variables) con el dominio del servicio Flask.
+AI_PREDICT_URL = os.getenv("AI_PREDICT_URL", "http://127.0.0.1:5001/predict")
 
-
-
-# --- Seguridad básica si DEBUG=False ---
+# --- Seguridad básica en producción ---
 if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
