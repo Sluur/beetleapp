@@ -234,12 +234,15 @@ class IsOwner(permissions.BasePermission):
 
 
 def _needs_convert(uploaded):
-    ct = (getattr(uploaded, "content_type", "") or "").lower()
     name = (getattr(uploaded, "name", "") or "").lower()
-    return not (
-        ct == "image/jpeg" or name.endswith(".jpg") or name.endswith(".jpeg")
-    )
 
+    # extensiones que el browser soporta bien
+    ok_ext = (".jpg", ".jpeg", ".png", ".webp")
+    if name.endswith(ok_ext):
+        return False
+
+    # todo lo demás (tif/tiff/heic/unknown) -> convertimos a jpg
+    return True
 
 def _as_jpeg(uploaded):
     img = Image.open(uploaded)
