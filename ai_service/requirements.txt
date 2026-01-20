@@ -3,4 +3,4 @@ flask-cors
 torch
 torchvision
 pillow
-requests==2.32.3
+gunicorn
