@@ -59,6 +59,9 @@ ALLOWED_HOSTS = [h.strip() for h in os.getenv(
 # En Railway el host real cambia; esto cubre *.up.railway.app
 if not DEBUG:
     ALLOWED_HOSTS += [".up.railway.app", ".railway.app"]
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    USE_X_FORWARDED_HOST = True
+    SECURE_SSL_REDIRECT = True
 
 # --- CORS / CSRF ---
 def _split_env(name: str, default: str = ""):
