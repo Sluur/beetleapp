@@ -117,7 +117,7 @@ BeetleApp uses a **decoupled microservices architecture** — the ML inference s
 
 ## Screenshots
 
-> *Add screenshots here*
+> 
 
 ---
 
